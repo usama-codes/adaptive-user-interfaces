@@ -1,0 +1,342 @@
+# frozen_string_literal: true
+
+#-- copyright
+# OpenProject is an open source project management software.
+# Copyright (C) the OpenProject GmbH
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License version 3.
+#
+# OpenProject is a fork of ChiliProject, which is a fork of Redmine. The copyright follows:
+# Copyright (C) 2006-2013 Jean-Philippe Lang
+# Copyright (C) 2010-2013 the ChiliProject Team
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+#
+# See COPYRIGHT and LICENSE files for more details.
+#++
+
+require "spec_helper"
+
+RSpec.describe API::V3::Queries::Schemas::FilterDependencyRepresenterFactory do
+  include API::V3::Utilities::PathHelper
+
+  let(:operator) { Queries::Operators::Equals }
+  let(:form_embedded) { true }
+
+  describe ".create" do
+    subject { described_class.create(filter, operator, form_embedded:) }
+
+    context "with assigned to filter" do
+      let(:filter) { Queries::WorkPackages::Filter::AssignedToFilter.create! }
+
+      it "is a all principals with access to project dependency" do
+        expect(subject).to be_a(API::V3::Queries::Schemas::ProjectMembersFilterDependencyRepresenter)
+      end
+    end
+
+    context "with shared with user filter" do
+      let(:filter) { Queries::WorkPackages::Filter::SharedWithUserFilter.create! }
+
+      it "is a shared with user dependency" do
+        expect(subject).to be_a(API::V3::Queries::Schemas::SharedWithUserFilterDependencyRepresenter)
+      end
+    end
+
+    context "with responsible filter" do
+      let(:filter) { Queries::WorkPackages::Filter::ResponsibleFilter.create! }
+
+      it "is a project members dependency" do
+        expect(subject).to be_a(API::V3::Queries::Schemas::ProjectMembersFilterDependencyRepresenter)
+      end
+    end
+
+    context "with author filter" do
+      let(:filter) { Queries::WorkPackages::Filter::AuthorFilter.create! }
+
+      it "is the user dependency" do
+        expect(subject).to be_a(API::V3::Queries::Schemas::UserFilterDependencyRepresenter)
+      end
+    end
+
+    context "with category filter" do
+      let(:filter) { Queries::WorkPackages::Filter::CategoryFilter.create! }
+
+      it "is the category dependency" do
+        expect(subject).to be_a(API::V3::Queries::Schemas::CategoryFilterDependencyRepresenter)
+      end
+    end
+
+    context "with created_at filter" do
+      let(:filter) { Queries::WorkPackages::Filter::CreatedAtFilter.create! }
+
+      it "is the date dependency" do
+        expect(subject).to be_a(API::V3::Queries::Schemas::DateTimeFilterDependencyRepresenter)
+      end
+    end
+
+    context "with custom_field filters" do
+      let(:filter) do
+        Queries::WorkPackages::Filter::CustomFieldFilter.from_custom_field! custom_field:
+      end
+
+      shared_examples_for "includes the cf json_cache_key mixin" do
+        it do
+          expect(subject.singleton_class.included_modules)
+            .to include(API::V3::Queries::Schemas::CustomFieldJsonCacheKeyMixin)
+        end
+      end
+
+      context "with type int" do
+        let(:custom_field) { build_stubbed(:integer_wp_custom_field) }
+
+        it "is the integer dependency" do
+          expect(subject).to be_a(API::V3::Queries::Schemas::IntegerFilterDependencyRepresenter)
+        end
+
+        it_behaves_like "includes the cf json_cache_key mixin"
+      end
+
+      context "with type float" do
+        let(:custom_field) { build_stubbed(:float_wp_custom_field) }
+
+        it "is the float dependency" do
+          expect(subject).to be_a(API::V3::Queries::Schemas::FloatFilterDependencyRepresenter)
+        end
+
+        it_behaves_like "includes the cf json_cache_key mixin"
+      end
+
+      context "with type text" do
+        let(:custom_field) { build_stubbed(:text_wp_custom_field) }
+
+        it "is the text dependency" do
+          expect(subject).to be_a(API::V3::Queries::Schemas::TextFilterDependencyRepresenter)
+        end
+
+        it_behaves_like "includes the cf json_cache_key mixin"
+      end
+
+      context "with type list" do
+        let(:custom_field) { build_stubbed(:list_wp_custom_field) }
+
+        it "is the custom option dependency" do
+          expect(subject).to be_a(API::V3::Queries::Schemas::CustomOptionFilterDependencyRepresenter)
+        end
+
+        it_behaves_like "includes the cf json_cache_key mixin"
+      end
+
+      context "with type user" do
+        let(:custom_field) { build_stubbed(:user_wp_custom_field) }
+
+        it "is the user dependency" do
+          expect(subject).to be_a(API::V3::Queries::Schemas::UserFilterDependencyRepresenter)
+        end
+
+        it_behaves_like "includes the cf json_cache_key mixin"
+      end
+
+      context "with type version" do
+        let(:custom_field) { build_stubbed(:version_wp_custom_field) }
+
+        it "is the version dependency" do
+          expect(subject).to be_a(API::V3::Queries::Schemas::VersionFilterDependencyRepresenter)
+        end
+
+        it_behaves_like "includes the cf json_cache_key mixin"
+      end
+
+      context "with type hierarchy" do
+        let(:hierarchy_root) { build_stubbed(:hierarchy_item) }
+        let(:custom_field) { build_stubbed(:custom_field, field_format: "hierarchy", hierarchy_root:) }
+
+        it "is the hierarchy dependency" do
+          expect(subject).to be_a(API::V3::Queries::Schemas::HierarchyFilterDependencyRepresenter)
+        end
+
+        it_behaves_like "includes the cf json_cache_key mixin"
+      end
+
+      context "with type date" do
+        let(:custom_field) { build_stubbed(:date_wp_custom_field) }
+
+        it "is the date dependency" do
+          expect(subject).to be_a(API::V3::Queries::Schemas::DateFilterDependencyRepresenter)
+        end
+
+        it_behaves_like "includes the cf json_cache_key mixin"
+      end
+
+      context "with type datetime" do
+        let(:custom_field) { build_stubbed(:wp_custom_field, :datetime) }
+
+        it "is the datetime dependency" do
+          expect(subject).to be_a(API::V3::Queries::Schemas::DateTimeFilterDependencyRepresenter)
+        end
+
+        it_behaves_like "includes the cf json_cache_key mixin"
+      end
+
+      context "with type bool" do
+        let(:custom_field) { build_stubbed(:boolean_wp_custom_field) }
+
+        it "is the boolean filter dependency" do
+          expect(subject).to be_a(API::V3::Queries::Schemas::BooleanFilterDependencyRepresenter)
+        end
+
+        it_behaves_like "includes the cf json_cache_key mixin"
+      end
+
+      context "with type string" do
+        let(:custom_field) { build_stubbed(:string_wp_custom_field) }
+
+        it "is the text dependency" do
+          expect(subject).to be_a(API::V3::Queries::Schemas::TextFilterDependencyRepresenter)
+        end
+
+        it_behaves_like "includes the cf json_cache_key mixin"
+      end
+    end
+
+    context "with done_ratio filter" do
+      let(:filter) { Queries::WorkPackages::Filter::DoneRatioFilter.create! }
+
+      it "is the integer dependency" do
+        expect(subject).to be_a(API::V3::Queries::Schemas::IntegerFilterDependencyRepresenter)
+      end
+    end
+
+    context "with due_date filter" do
+      let(:filter) { Queries::WorkPackages::Filter::DueDateFilter.create! }
+
+      it "is the date dependency" do
+        expect(subject).to be_a(API::V3::Queries::Schemas::DateFilterDependencyRepresenter)
+      end
+    end
+
+    context "with estimated_hours filter" do
+      let(:filter) { Queries::WorkPackages::Filter::EstimatedHoursFilter.create! }
+
+      it "is the integer dependency" do
+        expect(subject).to be_a(API::V3::Queries::Schemas::IntegerFilterDependencyRepresenter)
+      end
+    end
+
+    context "with group filter" do
+      let(:filter) { Queries::WorkPackages::Filter::GroupFilter.create! }
+
+      it "is the group dependency" do
+        expect(subject).to be_a(API::V3::Queries::Schemas::GroupFilterDependencyRepresenter)
+      end
+    end
+
+    context "with id filter" do
+      let(:filter) { Queries::WorkPackages::Filter::IdFilter.create! }
+
+      it "is the id dependency" do
+        expect(subject).to be_a(API::V3::Queries::Schemas::IdFilterDependencyRepresenter)
+      end
+    end
+
+    context "with priority filter" do
+      let(:filter) { Queries::WorkPackages::Filter::PriorityFilter.create! }
+
+      it "is the priority dependency" do
+        expect(subject).to be_a(API::V3::Queries::Schemas::PriorityFilterDependencyRepresenter)
+      end
+    end
+
+    context "with project filter" do
+      let(:filter) { Queries::WorkPackages::Filter::ProjectFilter.create! }
+
+      it "is the project dependency" do
+        expect(subject).to be_a(API::V3::Queries::Schemas::ProjectFilterDependencyRepresenter)
+      end
+    end
+
+    context "with role filter" do
+      let(:filter) { Queries::WorkPackages::Filter::RoleFilter.create! }
+
+      it "is the role dependency" do
+        expect(subject).to be_a(API::V3::Queries::Schemas::RoleFilterDependencyRepresenter)
+      end
+    end
+
+    context "with start_date filter" do
+      let(:filter) { Queries::WorkPackages::Filter::StartDateFilter.create! }
+
+      it "is the date dependency" do
+        expect(subject).to be_a(API::V3::Queries::Schemas::DateFilterDependencyRepresenter)
+      end
+    end
+
+    context "with subject filter" do
+      let(:filter) { Queries::WorkPackages::Filter::SubjectFilter.create! }
+
+      it "is the subject dependency" do
+        expect(subject).to be_a(API::V3::Queries::Schemas::TextFilterDependencyRepresenter)
+      end
+    end
+
+    context "with status filter" do
+      let(:filter) { Queries::WorkPackages::Filter::StatusFilter.create! }
+
+      it "is a status dependency" do
+        expect(subject).to be_a(API::V3::Queries::Schemas::StatusFilterDependencyRepresenter)
+      end
+    end
+
+    context "with subproject filter" do
+      let(:filter) { Queries::WorkPackages::Filter::SubprojectFilter.create! }
+
+      it "is a subproject dependency" do
+        expect(subject).to be_a(API::V3::Queries::Schemas::SubprojectFilterDependencyRepresenter)
+      end
+    end
+
+    context "with type filter" do
+      let(:filter) { Queries::WorkPackages::Filter::TypeFilter.create! }
+
+      it "is a type dependency" do
+        expect(subject).to be_a(API::V3::Queries::Schemas::TypeFilterDependencyRepresenter)
+      end
+    end
+
+    context "with updated_at filter" do
+      let(:filter) { Queries::WorkPackages::Filter::UpdatedAtFilter.create! }
+
+      it "is a type dependency" do
+        expect(subject).to be_a(API::V3::Queries::Schemas::DateTimeFilterDependencyRepresenter)
+      end
+    end
+
+    context "with version filter" do
+      let(:filter) { Queries::WorkPackages::Filter::VersionFilter.create! }
+
+      it "is a version dependency" do
+        expect(subject).to be_a(API::V3::Queries::Schemas::VersionFilterDependencyRepresenter)
+      end
+    end
+
+    context "with watcher filter" do
+      let(:filter) { Queries::WorkPackages::Filter::WatcherFilter.create! }
+
+      it "is a type dependency" do
+        expect(subject).to be_a(API::V3::Queries::Schemas::UserFilterDependencyRepresenter)
+      end
+    end
+  end
+end

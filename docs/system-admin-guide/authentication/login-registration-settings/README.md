@@ -1,0 +1,119 @@
+---
+sidebar_navigation:
+  title: Settings
+  priority: 990
+description: Login and registration settings in OpenProject.
+keywords: authentication settings, login settings, registration settings, OpenProject login, login, registration
+---
+# Login and registration
+
+To adapt general system **login and registration settings** in OpenProject, navigate to _Administration -> Authentication_ and choose -> _Login and registration_.
+
+Here you can adapt various settings related to login and registration in OpenProject, grouped under four tabs: 
+
+- Login 
+
+- Single Sign-On (SSO)
+
+- Registration 
+
+- Passwords
+
+![Login and registration settings in OpenProject administration](openproject_system_admin_guide_authentication_settings_login_and_registration.png)
+
+## Login settings
+
+Under the _Login_ tab you can adjust following settings: 
+
+1. Enable or disable the **autologin option**. This allows a user to remain logged in, even if they leave the site. If this option is activated, the “Stay signed in” option will appear on the login screen to be selected.
+
+2. Activate the **session expiration option**. 
+
+3. Set the **duration for inactivity time**, after which a session will expire. Note that any value below 5 will be treated as disabling the session expiration setting. This setting is not visible if the *Session expiration* is not selected.
+
+4. Define whether **user login, name, and mail address** should be logged for all requests.
+
+5. Define a path to **redirect users to after their first login**. If left empty, users are redirected to the homepage to see the onboarding tour.
+
+6. Set a **default path to redirect users to after login** (only if the login link is not a back link, i.e. `www.example.openproject.com/login`). If left empty, users are redirected to the homepage.
+
+   Do not forget to **save** your changes.
+
+![Login tab under login and registration settings in OpenProject system administration](openproject_system_admin_guide_authentication_settings_login_tab.png)
+
+## Single Sign-On (SSO) settings
+
+Under the _Single Sign-On (SSO)_ tab you can adjust following settings: 
+
+1. Select a **direct login SSO provider**. If this option is active, login requests will be redirected to the configured Omniauth provider. This will disable the login dropdown and sign-in page. 
+
+2. Allow **remapping of existing users**. If enabled, this option allows any configured identity provider to authenticate existing users based on their login, even if those users have never previously signed in with that provider. This feature is particularly useful when migrating your OpenProject instance to a new SSO provider.
+
+> [!IMPORTANT]
+> It is **not recommended** when using an identity provider that is not trusted by all users in your instance, as this may introduce security risks.
+
+3. Select who may use **Password login**:
+
+- **Allow for everyone** :  Anyone with an internal password can sign in with it, including users linked to an identity provider. This is the default and corresponds to the previous behavior.
+- **Disallow for SSO users**: Users linked to an identity provider cannot sign in with their internal password. Other users can continue using password authentication.
+- **Disallow for everyone**: The password form is hidden on the regular sign-in page. Only users and groups configured under **Users and groups who may still use a password** can sign in with a password via `/login/internal`.
+
+For **Disallow for SSO users** and **Disallow for everyone**, you can select **Users and groups who may still use a password** to retain password access for specific users, for example for break-glass administrative access. Selecting a group also includes users in its child groups recursively.
+
+> [!NOTE]
+> The `/login/internal` route provides access to password authentication without going through the regular SSO sign-in flow. It is available when a direct SSO login provider is configured. It is also available with **Disallow for everyone** when at least one break-glass user or group, or an environment-based login exception, is configured.
+>
+> If no SSO provider is enabled, the password login restriction controls are disabled and a warning is displayed. Settings defined through configuration or environment variables cannot be changed in the administration interface; affected settings are displayed as read-only and listed in a banner.
+
+> [!IMPORTANT]
+> The selected **Password login** policy also applies to password changes, password recovery, and LDAP password authentication. With **Disallow for everyone**, password-related administration settings are disabled and **LDAP connections** is hidden from the administration menu.
+
+
+![SSO tab under login and registration settings in OpenProject system administration](openproject_system_admin_guide_authentication_settings_sso_tab.png)
+
+## Registration settings
+
+Under the _Registration_ tab you can adjust following settings: 
+
+1. Select if the **authentication is required** to access OpenProject. For versions 13.1 and higher of OpenProject, this setting will be checked by default
+
+> [!IMPORTANT]
+> If you uncheck this box, your OpenProject instance will be visible to the general public without logging in. The visibility of individual projects depends on [this setting](../../../user-guide/projects/project-settings/project-information/#make-a-project-public).
+
+2. Select an option for **self-registration**. Self-registration can either be **disabled**, or it can be allowed with the following criteria:
+
+   a) **Account activation by email** - users can register on their own. They will receive an activation email and will need to activate their account after confirming  their email address. 
+
+> [!WARNING]
+> Administrators have no moderation control over this  activation process if this method is selected.
+
+   b) **Manual account activation** - users can register on their own. However, an administrator (or a user with the global permission to create or manage  users) needs to activate them.
+
+   c) **Automatic account activation** - users can register on their own. Their accounts are immediately active  without further action. 
+
+> [!WARNING]
+> Administrators have no moderation control over this  activation process if this method is selected.
+
+> [!NOTE]
+> By default, self-registration is only applied to internal users (logging in with username and password). If you have an identity provider such as LDAP, SAML or OpenID Connect, use the respective settings in their configuration to control which users are applicable for automatic user creation.
+
+3. Define after how many days the **activation email sent to new users will expire**. Afterwards, you will have the possibility to [re-send the activation email](../../users-permissions/users/#resend-user-invitation-via-email) via the user settings.
+
+4. Choose for which **language** you want to define **the footer displayed at the bottom of the registration page** and formulate that footer text.
+
+![Registration tab under Login and Registration section of authentication settings in OpenProject administration](openproject_system_admin_guide_authentication_settings_registration_tab.png)
+
+## Password settings
+
+Under the _Password_ tab you can adjust following settings: 
+
+1. Define the **minimum password length**.
+2. Define which **character classes are a mandatory part of the password**.
+3. Define the **minimum number of required character classes**.
+4. Define the number of days, after which a **password change should be enforced**. Value of 0 disables this option, i.e. no password change will be enforced.
+5. Define the **number of the most recently used passwords that a user should not be allowed to reuse**.
+6. **Enable password reset** (Forgot your password option). This way users will be able to reset their own passwords via email.
+7. Define the number of failed **login attempts, after which a user will be temporarily blocked**. Value of 0 disables this option, i.e. users will not be blocked after any amount of failed login attempts.
+8. Define the **duration of the time, for which the user will be blocked after failed login attempts**. Value of 0 disables this option.
+
+![Password settings tab under Login and Registration section of authentication settings in OpenProject administration](openproject_system_admin_guide_authentication_settings_password_tab.png)

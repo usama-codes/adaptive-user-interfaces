@@ -1,0 +1,173 @@
+# frozen_string_literal: true
+
+# -- copyright
+# OpenProject is an open source project management software.
+# Copyright (C) 2010-2024 the OpenProject GmbH
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License version 3.
+#
+# OpenProject is a fork of ChiliProject, which is a fork of Redmine. The copyright follows:
+# Copyright (C) 2006-2013 Jean-Philippe Lang
+# Copyright (C) 2010-2013 the ChiliProject Team
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+#
+# See COPYRIGHT and LICENSE files for more details.
+# ++
+
+module Admin
+  module Settings
+    class EnumerationsControllerBase < ApplicationController
+      include OpTurbo::ComponentStream
+
+      before_action :require_admin
+      before_action :find_enumeration, only: %i[edit update destroy move reassign]
+      layout "admin"
+
+      helper_method :index_component_class
+
+      def index
+        @enumerations = enumeration_class.all
+      end
+
+      def new
+        @enumeration = enumeration_class.new
+      end
+
+      def edit; end
+
+      def create
+        @enumeration = enumeration_class.new(enumeration_permitted_params)
+
+        if @enumeration.save
+          flash[:notice] = I18n.t(:notice_successful_update)
+          redirect_to(action: :index)
+        else
+          render action: :new, status: :unprocessable_entity
+        end
+      end
+
+      def update
+        if @enumeration.update(enumeration_permitted_params)
+          flash[:notice] = I18n.t(:notice_successful_update)
+          redirect_to(action: :index)
+        else
+          render action: :edit, status: :unprocessable_entity
+        end
+      end
+
+      def destroy
+        if @enumeration.in_use?
+          handle_reassignment_on_deletion
+        elsif @enumeration.destroy
+          flash[:notice] = I18n.t(:notice_successful_delete)
+          redirect_to(action: :index, status: :see_other)
+        else
+          flash.now[:error] = I18n.t(:error_can_not_delete_entry)
+          redirect_to(action: :index, status: :see_other)
+        end
+      end
+
+      def move
+        moved = move_after_anchor
+
+        if moved
+          render_move_success
+        else
+          render_error_flash_message_via_turbo_stream(
+            message: I18n.t(:error_invalid_list_move_anchor)
+          )
+        end
+
+        respond_with_turbo_streams(status: moved ? :ok : :unprocessable_entity)
+      end
+
+      def reassign
+        @other_enumerations = enumeration_class.all - [@enumeration]
+      end
+
+      private
+
+      # Morph first: Turbo applies streams in order, so the flash only shows
+      # once the list has been reconciled.
+      def render_move_success
+        update_via_turbo_stream(component: index_component, method: :morph)
+        render_success_flash_message_via_turbo_stream(
+          message: I18n.t(:enumeration_caption_order_changed)
+        )
+      end
+
+      def index_component
+        index_component_class.new(enumerations: enumeration_class.all)
+      end
+
+      def move_after_anchor
+        return false unless valid_drop_request?
+
+        @enumeration.move_after_anchor(drop_params[:prev_id], scope: enumeration_class.all)
+      end
+
+      def valid_drop_request?
+        drop_params[:list_type] == sortable_list_type &&
+          unscoped_list_id? &&
+          drop_params.key?(:prev_id)
+      end
+
+      # Enumeration lists carry no list id. The raw param is checked because
+      # permit cannot tell an absent value from a filtered-out array or hash.
+      def unscoped_list_id?
+        params[:list_id].nil? || params[:list_id] == ""
+      end
+
+      def drop_params
+        @drop_params ||= params.permit(:list_type, :list_id, :prev_id)
+      end
+
+      def sortable_list_type
+        enumeration_class.model_name.param_key
+      end
+
+      def handle_reassignment_on_deletion
+        reassign_to_id = params.dig(:enumeration, :reassign_to_id)
+
+        if reassign_to_id.present?
+          reassign_to = enumeration_class.find_by(id: reassign_to_id)
+          @enumeration.destroy(reassign_to)
+          flash[:notice] = I18n.t(:notice_successful_delete)
+          redirect_to(action: :index)
+        else
+          redirect_to(action: :reassign, id: @enumeration.id)
+        end
+      end
+
+      def find_enumeration
+        @enumeration = enumeration_class.find(params[:id])
+      end
+
+      def enumeration_class
+        raise SubclassResponsibilityError
+      end
+
+      def enumeration_permitted_params
+        permitted_params.enumerations
+      end
+
+      def index_component_class
+        ::Admin::Enumerations::IndexComponent
+      end
+    end
+  end
+end

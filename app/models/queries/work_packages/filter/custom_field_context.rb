@@ -1,0 +1,101 @@
+# frozen_string_literal: true
+
+#-- copyright
+# OpenProject is an open source project management software.
+# Copyright (C) the OpenProject GmbH
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License version 3.
+#
+# OpenProject is a fork of ChiliProject, which is a fork of Redmine. The copyright follows:
+# Copyright (C) 2006-2013 Jean-Philippe Lang
+# Copyright (C) 2010-2013 the ChiliProject Team
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+#
+# See COPYRIGHT and LICENSE files for more details.
+#++
+
+module Queries::WorkPackages::Filter::CustomFieldContext
+  class << self
+    def custom_field_class
+      ::WorkPackageCustomField
+    end
+
+    def model
+      ::WorkPackage
+    end
+
+    def customized_type
+      model.name
+    end
+
+    def custom_fields(context)
+      if context&.project&.persisted?
+        WorkPackageCustomField
+          .filter
+          .on_visible_type_and_project(projects: context.project)
+      elsif context&.project
+        WorkPackageCustomField.filter
+      else
+        custom_field_class
+          .filter
+          .on_visible_type_and_project(User.current)
+          .where
+          .not(field_format: %w(user version))
+      end
+    end
+
+    def placed_on_form_join(custom_field, form_configuration_id, exclusion)
+      memberships = FormConfigurationAttribute.table_name
+
+      <<~SQL.squish
+        JOIN #{memberships}
+          ON #{memberships}.form_configuration_id = #{form_configuration_id}
+         AND #{memberships}.custom_field_id = #{custom_field.id}
+         AND #{memberships}.form_configuration_group_id IS NOT NULL
+         AND #{exclusion}
+      SQL
+    end
+
+    def where_subselect_joins(custom_field)
+      cv_db_table = CustomValue.table_name
+      work_package_db_table = WorkPackage.table_name
+
+      own_variant_expr = "COALESCE(pt.variant_id, base_tv.id)"
+      form_join, form_configuration_id, excluded = TypeVariant.form_configuration_join(own_variant_expr)
+      exclusion = TypeVariant.excluded_custom_field_condition(custom_field.id.to_s, excluded)
+
+      <<~SQL.squish
+        LEFT OUTER JOIN #{cv_db_table}
+          ON #{cv_db_table}.customized_type = 'WorkPackage'
+         AND #{cv_db_table}.customized_id = #{work_package_db_table}.id
+         AND #{cv_db_table}.custom_field_id = #{custom_field.id}
+        LEFT JOIN project_types pt
+          ON pt.project_id = #{work_package_db_table}.project_id
+         AND pt.type_id = #{work_package_db_table}.type_id
+        LEFT JOIN type_variants base_tv
+          ON base_tv.type_id = #{work_package_db_table}.type_id
+         AND base_tv.is_default_variant = TRUE
+        #{form_join}
+        #{placed_on_form_join(custom_field, form_configuration_id, exclusion)}
+      SQL
+    end
+
+    def where_subselect_conditions
+      nil
+    end
+  end
+end

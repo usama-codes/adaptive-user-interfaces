@@ -1,0 +1,109 @@
+#-- copyright
+# OpenProject is an open source project management software.
+# Copyright (C) the OpenProject GmbH
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License version 3.
+#
+# OpenProject is a fork of ChiliProject, which is a fork of Redmine. The copyright follows:
+# Copyright (C) 2006-2013 Jean-Philippe Lang
+# Copyright (C) 2010-2013 the ChiliProject Team
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+#
+# See COPYRIGHT and LICENSE files for more details.
+#++
+
+module Bim::Bcf
+  module Issues
+    class CreateService < ::BaseServices::Create
+      # Whether these reference links point the topic at a work package that already exists,
+      # rather than at one the topic is about to create.
+      def self.adopts_work_package?(reference_links)
+        path = ::API::V3::Utilities::PathHelper::ApiV3Path.work_package("")
+
+        Array(reference_links).any? { |link| link.include?(path) }
+      end
+
+      private
+
+      def before_perform(service_result)
+        wp_call = get_work_package params
+        return wp_call if wp_call.failure?
+
+        self.params = issue_params(work_package: wp_call.result, params:)
+        super
+      end
+
+      def issue_params(work_package:, params:)
+        { work_package: }
+          .merge(params.slice(*Bim::Bcf::Issue::SETTABLE_ATTRIBUTES))
+      end
+
+      def get_work_package(params)
+        wp_links = remove_work_package_links! Array(params[:reference_links])
+
+        if wp_links.empty?
+          create_work_package params
+        else
+          params.delete :reference_links
+
+          use_work_package links: wp_links, params:
+        end
+      end
+
+      def use_work_package(links:, params:)
+        work_package = WorkPackage.visible(user).find_by_display_id(work_package_identifier_from_links(links))
+        return work_package_not_found_result if work_package.nil?
+
+        ::WorkPackages::UpdateService
+          .new(user:, model: work_package)
+          .call(**params.except(*Bim::Bcf::Issue::SETTABLE_ATTRIBUTES))
+      end
+
+      def create_work_package(params)
+        ::WorkPackages::CreateService
+          .new(user:)
+          .call(**params.except(*Bim::Bcf::Issue::SETTABLE_ATTRIBUTES))
+      end
+
+      def work_package_identifier_from_links(links)
+        links
+          .take(1)
+          .map { |link| link.split("/").last }
+          .first
+      end
+
+      def remove_work_package_links!(links)
+        path = api_path_helper.work_package("")
+        wp_links = links.select { |link| link.include?(path) }
+
+        links.delete_if { |link| wp_links.include?(link) }
+
+        wp_links
+      end
+
+      def work_package_not_found_result
+        ServiceResult.failure(errors: Bim::Bcf::Issue.new.errors).tap do |r|
+          r.errors.add :base, :error_not_found
+        end
+      end
+
+      def api_path_helper
+        ::API::V3::Utilities::PathHelper::ApiV3Path
+      end
+    end
+  end
+end

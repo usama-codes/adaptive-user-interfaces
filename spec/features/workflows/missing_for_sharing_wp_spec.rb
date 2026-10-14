@@ -1,0 +1,100 @@
+# frozen_string_literal: true
+
+# -- copyright
+# OpenProject is an open source project management software.
+# Copyright (C) the OpenProject GmbH
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License version 3.
+#
+# OpenProject is a fork of ChiliProject, which is a fork of Redmine. The copyright follows:
+# Copyright (C) 2006-2013 Jean-Philippe Lang
+# Copyright (C) 2010-2013 the ChiliProject Team
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+#
+# See COPYRIGHT and LICENSE files for more details.
+# ++
+
+require "spec_helper"
+
+RSpec.describe "Configuring the workflow for work package sharing", :js,
+               with_config: { show_warning_bars: true },
+               with_ee: %i[work_package_sharing] do
+  let!(:role) { create(:project_role) }
+  let!(:work_package_role) { create(:edit_work_package_role) }
+  let!(:type) { create(:type) }
+  let!(:start_status) { create(:status) }
+  let!(:end_status) { create(:status) }
+  let!(:workflow) do
+    create(:workflow,
+           role_id: role.id,
+           type_id: type.id,
+           old_status_id: start_status.id,
+           new_status_id: end_status.id,
+           author: false,
+           assignee: false)
+  end
+  let(:target_roles_autocompleter) { FormFields::Primerized::AutocompleteField.new("target_roles", selector: "[data-test-selector='target_roles_autocomplete']") }
+
+  current_user { create(:admin) }
+
+  before do
+    visit home_url
+  end
+
+  it "shows a warning until a workflow is configured for the work package edit role" do
+    # There is a warning bar at the bottom informing of the missing workflow
+    within ".warning-bar--item" do
+      expect(page)
+        .to have_text("No workflow is configured for the '#{work_package_role.name}' role. " \
+                      "Without a workflow, the shared with user cannot alter the status of the work package.")
+
+      click_link "Configure the workflows in the administration."
+    end
+
+    # The warning links to the types administration; open the type's workflow tab from there,
+    # then follow the read-only banner to the workflow that the type uses.
+    expect(page).to have_current_path(types_path)
+    visit edit_type_workflow_path(type)
+    within_test_selector("workflow-read-only") { click_link I18n.t("admin.workflows.read_only.edit_action") }
+
+    # On the copy workflow form, the source role is pre-selected;
+    # copy its workflow to the work package edit role.
+    within("#workflow-table") { click_link I18n.t(:label_copy_workflow_from_role) }
+    target_roles_autocompleter.select_option work_package_role.name
+    target_roles_autocompleter.close_autocompleter
+
+    click_button "Copy"
+
+    # Copying succeeds which results in the edit role having a workflow.
+    expect(page)
+      .to have_text "Successfully copied workflow"
+
+    expect(Workflows::StatusTransition.where(role_id: work_package_role.id,
+                                             workflow_id: type.default_variant.workflow_id,
+                                             old_status_id: start_status.id,
+                                             new_status_id: end_status.id,
+                                             author: false,
+                                             assignee: false).count).to eq(1)
+
+    # Copying to another role stays in place and only updates the matrix frame;
+    # the layout warning bar recomputes on the next page load.
+    page.refresh
+
+    expect(page)
+      .to have_no_css(".warning-bar--item")
+  end
+end

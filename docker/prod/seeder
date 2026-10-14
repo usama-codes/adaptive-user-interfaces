@@ -1,0 +1,23 @@
+#!/bin/bash -e
+
+if [ "$1" = "--skip-migrate" ]; then
+	shift
+else
+	$APP_PATH/docker/prod/migrate
+fi
+
+echo "Executing database seed..."
+bundle exec rake db:seed
+SEED_STATUS=$?
+if [ $SEED_STATUS -ne 0 ]; then
+	echo "Database seed failed with status $SEED_STATUS"
+	exit $SEED_STATUS
+fi
+
+if [ "$1" = "--set" ]; then
+	shift
+	echo "Update application settings..."
+	bundle exec rake setting:set["$@"]
+fi
+
+exit 0

@@ -1,0 +1,71 @@
+//-- copyright
+// OpenProject is an open source project management software.
+// Copyright (C) the OpenProject GmbH
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License version 3.
+//
+// OpenProject is a fork of ChiliProject, which is a fork of Redmine. The copyright follows:
+// Copyright (C) 2006-2013 Jean-Philippe Lang
+// Copyright (C) 2010-2013 the ChiliProject Team
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License
+// as published by the Free Software Foundation; either version 2
+// of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program. If not, see <https://www.gnu.org/licenses/>.
+//
+// See COPYRIGHT and LICENSE files for more details.
+//++
+
+// Let the qr float next to the manual entry
+.mobile-otp-qr-form
+  display: flex
+  margin: 2rem 0
+
+  .qr-code-element
+    margin-right: 50px
+
+.mobile-otp-qr-manually
+  align-self: center
+
+// Add some padding to QR code
+.qr-code-element
+  padding: 5px
+
+#resend_otp_container
+  margin-top: 30px
+
+#resend_otp_container .resend-header
+  font-size: 14px
+  font-weight: var(--base-text-weight-bold)
+  margin-bottom: 10px
+
+
+// Backup codes display
+.two-factor-authentication--backup-codes
+  // Avoid stretching the columns too much
+  max-width: 500px
+  margin: 2rem 0
+  background: var(--bgColor-muted)
+  border: 1px solid var(--borderColor-default)
+  border-radius: 5px
+
+  ul
+    padding: 10px
+    margin: 0
+    column-count: 2
+    column-gap: 50px
+    list-style: none
+    font-family: monospace
+    font-size: 1.3rem
+    font-weight: var(--base-text-weight-bold)
+  li
+    padding: 5px

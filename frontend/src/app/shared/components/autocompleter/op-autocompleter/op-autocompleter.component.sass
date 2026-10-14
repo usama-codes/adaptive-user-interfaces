@@ -1,0 +1,53 @@
+@import "helpers"
+
+.op-autocompleter
+  &--wp-wrapper
+    padding: 5px 5px
+    line-height: 15px
+    min-height: 25px  // line-height + padding
+    word-break: break-word
+
+  &--wp-line
+    display: flex
+    flex-wrap: nowrap
+    gap: var(--base-size-8)
+    font-size: var(--text-body-size-small)
+    white-space: nowrap
+    overflow: hidden
+    margin-bottom: var(--base-size-4)
+
+  &--wp-id
+    color: var(--fgColor-muted)
+    font-size: var(--text-body-size-small)
+    white-space: nowrap
+
+  &--wp-status
+    display: inline-flex
+    align-items: center
+    overflow: hidden
+
+  &--wp-project
+    flex-shrink: 1
+    min-width: 0
+    max-width: 100%
+    @include text-shortener
+
+  &--wp-subject
+    font-weight: var(--base-text-weight-bold)
+    display: inline-block
+    white-space: normal
+    overflow-wrap: break-word
+    line-height: 1.5
+
+  &__option-principal-email
+    color: var(--fgColor-muted)
+    font-size: var(--font-size-small)
+    margin-left: var(--stack-gap-condensed)
+
+  @media screen and (max-width: $breakpoint-sm)
+    &__option-principal-email
+      display: block
+      margin-left: 0
+      margin-top: var(--control-xsmall-gap)
+    &--option-principal-avatar + span + &__option-principal-email
+      margin-left: var(--control-small-size)

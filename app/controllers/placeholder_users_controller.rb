@@ -1,0 +1,246 @@
+# frozen_string_literal: true
+
+#-- copyright
+# OpenProject is an open source project management software.
+# Copyright (C) the OpenProject GmbH
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License version 3.
+#
+# OpenProject is a fork of ChiliProject, which is a fork of Redmine. The copyright follows:
+# Copyright (C) 2006-2013 Jean-Philippe Lang
+# Copyright (C) 2010-2013 the ChiliProject Team
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+#
+# See COPYRIGHT and LICENSE files for more details.
+#++
+
+class PlaceholderUsersController < ApplicationController
+  include OpTurbo::ComponentStream
+
+  layout "admin"
+  before_action :authorize_global, except: %i[show]
+  no_authorization_required! :show
+
+  before_action :find_placeholder_user, only: %i[show
+                                                 edit
+                                                 update
+                                                 toggle_criteria
+                                                 update_criteria
+                                                 deletion_info
+                                                 destroy]
+
+  before_action :authorize_deletion, only: %i[deletion_info destroy]
+
+  def index
+    @query = index_query
+
+    respond_to do |format|
+      format.html do
+        render layout: !request.xhr?
+      end
+      format.turbo_stream { render_index_turbo_stream }
+    end
+  end
+
+  def show
+    # show projects based on current user visibility.
+    # But don't simply concatenate the .visible scope to the memberships
+    # as .memberships has an include and an order which for whatever reason
+    # also gets applied to the Project.allowed_to parts concatenated by a UNION
+    # and an order inside a UNION is not allowed in postgres.
+    @memberships = @placeholder_user
+                     .memberships
+                     .where(id: Member.visible(current_user))
+
+    respond_to do |format|
+      format.html { render layout: "no_menu" }
+    end
+  end
+
+  def new
+    @placeholder_user = PlaceholderUsers::SetAttributesService
+      .new(user: User.current,
+           model: PlaceholderUser.new,
+           contract_class: EmptyContract)
+      .call({})
+      .result
+  end
+
+  def edit
+    @membership ||= Member.new
+    @individual_principal = @placeholder_user
+  end
+
+  # The criteria tab has no save button: the filter builder sends its selection
+  # as it is edited, which stores it and refreshes the users it selects. The
+  # builder only ever issues GETs, hence the verb.
+  def update_criteria
+    call = PlaceholderUsers::UpdateService
+             .new(user: User.current, model: @placeholder_user)
+             .call(user_filter: parsed_user_filter)
+
+    render_error_flash_message_via_turbo_stream(message: call.message) if call.failure?
+
+    update_via_turbo_stream(
+      component: PlaceholderUsers::MatchingUsersComponent.new(placeholder_user: @placeholder_user)
+    )
+    respond_with_turbo_streams
+  end
+
+  def create # rubocop:disable Metrics/AbcSize
+    service = PlaceholderUsers::CreateService.new(user: User.current)
+    service_result = service.call(create_attributes)
+    @placeholder_user = service_result.result
+
+    if service_result.success?
+      respond_to do |format|
+        format.html do
+          flash[:notice] = I18n.t(:notice_successful_create)
+          redirect_to edit_placeholder_user_path(@placeholder_user)
+        end
+      end
+    else
+      respond_to do |format|
+        format.html do
+          render action: :new, status: :unprocessable_entity
+        end
+      end
+    end
+  end
+
+  def update # rubocop:disable Metrics/AbcSize
+    service_result = PlaceholderUsers::UpdateService
+      .new(user: User.current,
+           model: @placeholder_user)
+      .call(update_attributes)
+
+    if service_result.success?
+      respond_to do |format|
+        format.html do
+          flash[:notice] = I18n.t(:notice_successful_update)
+          redirect_back_or_to(edit_placeholder_user_path(@placeholder_user))
+        end
+      end
+    else
+      @membership ||= Member.new
+
+      respond_to do |format|
+        format.html do
+          render action: :edit, status: :unprocessable_entity
+        end
+      end
+    end
+  end
+
+  def toggle_criteria
+    unless criteria_activated?
+      call = PlaceholderUsers::UpdateService
+               .new(user: User.current, model: @placeholder_user)
+               .call(user_filter: [])
+
+      render_error_flash_message_via_turbo_stream(message: call.message) if call.failure?
+    end
+
+    update_via_turbo_stream(
+      component: PlaceholderUsers::CriteriaComponent.new(placeholder_user: @placeholder_user.reload,
+                                                         active: criteria_activated?)
+    )
+    respond_with_turbo_streams
+  end
+
+  def deletion_info
+    respond_with_dialog PlaceholderUsers::DeleteDialogComponent.new(placeholder_user: @placeholder_user)
+  end
+
+  def destroy
+    call = PlaceholderUsers::DeleteService
+      .new(user: User.current, model: @placeholder_user)
+      .call
+
+    if call.success?
+      flash[:info] = I18n.t(:notice_deletion_scheduled)
+    else
+      flash[:error] = call.message
+    end
+
+    respond_to do |format|
+      format.html do
+        redirect_to placeholder_users_path
+      end
+    end
+  end
+
+  private
+
+  def index_query
+    query = Queries::PlaceholderUsers::PlaceholderUserQuery.new
+    query.where(:status, "=", ["active"])
+
+    ::Queries::ParamsParser.parse(params).fetch(:filters, []).each do |filter|
+      query.where(filter[:attribute], filter[:operator], filter[:values])
+    end
+
+    query
+  end
+
+  def render_index_turbo_stream
+    update_via_turbo_stream(component: PlaceholderUsers::PlaceholderUserFilterButtonComponent.new(query: @query))
+    replace_via_turbo_stream(component: PlaceholderUsers::TableComponent.new(rows: @query))
+    turbo_streams << turbo_stream.push_state(url_for(params.permit(:filters, :sortBy, :page, :per_page)))
+    turbo_streams << helpers.render_flash_messages_as_turbo_streams
+    render turbo_stream: resolve_turbo_streams
+  end
+
+  # The criteria fields stay in the DOM when the checkbox is off, so the
+  # checkbox rather than the presence of `filters` decides whether they apply.
+  def create_attributes
+    attributes = permitted_params.placeholder_user
+    return attributes unless params[:with_criteria] == "1"
+
+    attributes.merge(user_filter: parsed_user_filter)
+  end
+
+  def update_attributes
+    return { user_filter: parsed_user_filter } if params.key?(:filters)
+
+    permitted_params.placeholder_user
+  end
+
+  def parsed_user_filter
+    query = UserQuery.new
+    ::Queries::ParamsParser.parse(filters: params[:filters])
+                           .fetch(:filters, [])
+                           .each { |filter| query.where(filter[:attribute], filter[:operator], filter[:values]) }
+    query.filters
+  end
+
+  def criteria_activated?
+    ActiveRecord::Type::Boolean.new.cast(params.permit(:value)[:value])
+  end
+
+  def find_placeholder_user
+    @placeholder_user = PlaceholderUser.visible.find(params[:id])
+  end
+
+  protected
+
+  def authorize_deletion
+    unless helpers.can_delete_placeholder_user?(@placeholder_user, current_user)
+      render_403 message: I18n.t("placeholder_users.right_to_manage_members_missing")
+    end
+  end
+end

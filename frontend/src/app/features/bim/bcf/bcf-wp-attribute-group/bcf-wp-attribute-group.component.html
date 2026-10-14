@@ -1,0 +1,30 @@
+@if (shouldShowGroup()) {
+  <div class="attributes-group description-group">
+    <div class="attributes-group--header">
+      <div class="attributes-group--header-container">
+        <h3 class="attributes-group--header-text"
+        [textContent]="text.bcf"></h3>
+      </div>
+    </div>
+    @if (galleryImages.length > 0) {
+      <div class="bcf--viewpoints">
+        <ngx-gallery [options]="galleryOptions"
+          [images]="galleryImages"
+          (change)="onGalleryChanged($event)"
+          (imagesReady)="selectViewpointInGallery()"
+          (previewOpen)="galleryPreviewOpen()"
+          (previewClose)="galleryPreviewClose()" />
+      </div>
+    }
+    @if (viewerVisible && createAllowed) {
+      <button
+        role="button"
+        class="button"
+        [title]="text.add_viewpoint"
+        (click)="saveViewpoint(workPackage)">
+        <op-icon icon-classes="button--icon icon-add" />
+        <span class="button--text"> {{text.viewpoint}} </span>
+      </button>
+    }
+  </div>
+}

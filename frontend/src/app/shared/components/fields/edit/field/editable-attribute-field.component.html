@@ -1,0 +1,23 @@
+<div
+  [ngClass]="[
+    editFieldContainerClass,
+    fieldName,
+    active && '-active' || '',
+    wrapperClasses || '-small'
+  ]"
+  (dragover)="startDragActivation($event)"
+>
+  <div
+    #editContainer
+    [hidden]="!active"
+  ></div>
+
+  <div
+    (click)="activateIfEditable($event)"
+    (dblclick)="activateIfEditable($event)"
+    (keydown.enter)="activateIfEditable($event)"
+    [hidden]="active"
+    tabindex="-1"
+    #displayContainer
+  ></div>
+</div>

@@ -1,0 +1,27 @@
+<% manager = ::OpenProject::Avatars::AvatarManager %>
+
+<%=
+  settings_primer_form_with(scope: :settings, url: update_url, method: :post) do |f|
+    render_inline_settings_form(f) do |form|
+      form.fieldset_group(title: I18n.t("avatars.label_gravatar")) do |group|
+        group.check_box(
+          name: :enable_gravatars,
+          label: I18n.t("avatars.settings.enable_gravatars"),
+          checked: manager.gravatar_enabled?,
+          disabled: false
+        )
+      end
+
+      form.fieldset_group(title: I18n.t("avatars.label_local_avatar")) do |group|
+        group.check_box(
+          name: :enable_local_avatars,
+          label: I18n.t("avatars.settings.enable_local_avatars"),
+          checked: manager.local_avatars_enabled?,
+          disabled: false
+        )
+      end
+
+      form.submit(label: I18n.t(:button_apply))
+    end
+  end
+%>

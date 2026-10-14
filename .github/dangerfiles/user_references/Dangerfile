@@ -1,0 +1,83 @@
+# frozen_string_literal: true
+
+#-- copyright
+# OpenProject is an open source project management software.
+# Copyright (C) the OpenProject GmbH
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License version 3.
+#
+# OpenProject is a fork of ChiliProject, which is a fork of Redmine. The copyright follows:
+# Copyright (C) 2006-2013 Jean-Philippe Lang
+# Copyright (C) 2010-2013 the ChiliProject Team
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+#
+# See COPYRIGHT and LICENSE files for more details.
+#++
+
+MIGRATIONS_REGEX = %r{db/migrate/.*\.rb}
+USER_REFERENCE_REGEX = /(?:belongs_to\s+:user|references\s+:users?|to_table:\s*:users?|table_name:\s*["']users?["'])/i
+
+def added_or_modified_migrations?
+  (git.modified_files + git.added_files).grep(MIGRATIONS_REGEX)
+end
+
+def files_with_user_references
+  files = {}
+
+  # Check migrations
+  added_or_modified_migrations?
+    # Ignore files that have been removed.
+    .select { |file| File.exist?(file) }
+    .each do |file|
+    content = File.read(file)
+    if content.match?(USER_REFERENCE_REGEX)
+      files[file] = "migration with user reference"
+    end
+  end
+
+  files
+end
+
+# Check for user references in migrations and models
+files_with_references = files_with_user_references
+if files_with_references.any?
+  warning_message = ["Attention developer & reviewer: Files with potential user references found:"]
+
+  files_with_references.each do |file, type|
+    warning_message << "- #{file} (#{type})"
+  end
+
+  job_link = github.html_link("app/workers/principals/delete_job.rb")
+  replacement_service = github.html_link("app/services/principals/replace_references_service.rb")
+  replacements = github.html_link("config/initializers/replace_references_service.rb")
+
+  warning_message << <<~EOS
+
+  **Please make sure:**
+
+  1. You've added proper relationships (has_many, belongs_to, ...) and their inverse in your models
+  2. You deal with model destruction dependencies: `dependent: :destroy` or `dependent: :delete_all`
+  3. You add behavior and tests for the Principal::DeleteJob (#{job_link})
+  4. You replace references to users with deleted user in Principal::ReplaceReferencesService (#{replacement_service})  by adding to the replacements initailizer (#{replacements}) for the core, or using the `replace_principal_references` helper in modules/plugins.
+  5. You test the above behaviors with an integration test (e.g., [like this one](https://github.com/opf/openproject/blob/dev/modules/meeting/spec/services/principals/replace_references_service_call_integration_spec.rb) to confirm deletion of users is possible.
+
+  This helps prevent dangling database objects when users are deleted and resulting bugs.
+  EOS
+
+
+  warn warning_message.join("\n")
+end

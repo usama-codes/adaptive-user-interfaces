@@ -1,0 +1,116 @@
+//-- copyright
+// OpenProject is an open source project management software.
+// Copyright (C) the OpenProject GmbH
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License version 3.
+//
+// OpenProject is a fork of ChiliProject, which is a fork of Redmine. The copyright follows:
+// Copyright (C) 2006-2013 Jean-Philippe Lang
+// Copyright (C) 2010-2013 the ChiliProject Team
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License
+// as published by the Free Software Foundation; either version 2
+// of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program. If not, see <https://www.gnu.org/licenses/>.
+//
+// See COPYRIGHT and LICENSE files for more details.
+//++
+
+import { ChangeDetectionStrategy, Component, HostListener, Input, OnInit, Type, inject } from '@angular/core';
+import {
+  WorkPackageViewFocusService,
+} from 'core-app/features/work-packages/routing/wp-view-base/view-services/wp-view-focus.service';
+import {
+  KeepTabService,
+} from 'core-app/features/work-packages/components/wp-single-view-tabs/keep-tab/keep-tab.service';
+import {
+  WorkPackageSingleViewBase,
+} from 'core-app/features/work-packages/routing/wp-view-base/work-package-single-view.base';
+import { HalResourceNotificationService } from 'core-app/features/hal/services/hal-resource-notification.service';
+import {
+  WorkPackageNotificationService,
+} from 'core-app/features/work-packages/services/notifications/work-package-notification.service';
+import { WpSingleViewService } from 'core-app/features/work-packages/routing/wp-view-base/state/wp-single-view.service';
+import { RecentItemsService } from 'core-app/core/recent-items.service';
+import { UrlParamsService } from 'core-app/core/navigation/url-params.service';
+import {
+  WorkPackageTabsService,
+} from 'core-app/features/work-packages/components/wp-tabs/services/wp-tabs/wp-tabs.service';
+import { TabComponent } from 'core-app/features/work-packages/components/wp-tabs/components/wp-tab-wrapper/tab';
+
+@Component({
+  templateUrl: './wp-split-view.html',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  selector: 'op-wp-split-view',
+  providers: [
+    WpSingleViewService,
+    { provide: HalResourceNotificationService, useClass: WorkPackageNotificationService },
+  ],
+  standalone: false,
+})
+export class WorkPackageSplitViewComponent extends WorkPackageSingleViewBase implements OnInit {
+  keepTab = inject(KeepTabService);
+  wpTableFocus = inject(WorkPackageViewFocusService);
+  recentItemsService = inject(RecentItemsService);
+  readonly urlParams = inject(UrlParamsService);
+  readonly wpTabs = inject(WorkPackageTabsService);
+
+  @Input() showTabs = true;
+
+  @Input() resizerClass = 'work-packages-partitioned-page--content-right';
+
+    // enable other parts of the application to trigger an immediate update
+  // e.g. a stimulus controller
+  // currently used by the new activities tab which does its own polling
+  @HostListener('document:ian-update-immediate')
+  triggerImmediateUpdate() {
+    this.storeService.reload();
+  }
+
+  ngOnInit():void {
+    this.observeWorkPackage();
+  }
+
+  /**
+   * Set focus, selection, and recent-items after the WP has loaded.
+   *
+   * Intentionally deferred from ngOnInit because the route param
+   * (this.workPackageId) may be a semantic identifier like "PROJ-7",
+   * but focus/selection services are keyed by numeric PK. By the time
+   * init() runs, this.workPackage.id is guaranteed to be the numeric PK.
+   */
+  protected override init():void {
+    super.init();
+    const numericId = this.workPackage.id!;
+    this.wpTableFocus.initializeSelectionAndFocus(numericId, false);
+
+    this.recentItemsService.add(numericId);
+  }
+
+  get activeTabComponent():Type<TabComponent>|undefined {
+    return this
+      .wpTabs
+      .tabs
+      .find((tab) => tab.id === this.activeTab)
+      ?.component;
+  }
+
+  protected override handleLoadingError(error:unknown):void {
+    super.handleLoadingError(error);
+
+    // Go back to the base route, closing this split view
+    Turbo.visit(
+      `${this.urlParams.basePathWithoutDetails()}${window.location.search}`,
+      { frame: 'content-bodyRight', action: 'replace' },
+    );
+  }
+}

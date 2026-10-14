@@ -1,0 +1,104 @@
+//-- copyright
+// OpenProject is an open source project management software.
+// Copyright (C) the OpenProject GmbH
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License version 3.
+//
+// OpenProject is a fork of ChiliProject, which is a fork of Redmine. The copyright follows:
+// Copyright (C) 2006-2013 Jean-Philippe Lang
+// Copyright (C) 2010-2013 the ChiliProject Team
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License
+// as published by the Free Software Foundation; either version 2
+// of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program. If not, see <https://www.gnu.org/licenses/>.
+//
+// See COPYRIGHT and LICENSE files for more details.
+//++
+
+import { Injector } from '@angular/core';
+import { WorkPackageViewFocusService } from 'core-app/features/work-packages/routing/wp-view-base/view-services/wp-view-focus.service';
+import { WorkPackageResource } from 'core-app/features/hal/resources/work-package-resource';
+import { States } from 'core-app/core/states/states.service';
+import { WorkPackageViewSelectionGesturesService } from 'core-app/features/work-packages/routing/wp-view-base/view-services/wp-view-selection-gestures.service';
+import { LazyInject } from 'core-app/shared/helpers/angular/lazy-inject.decorator';
+import { KeepTabService } from '../../../wp-single-view-tabs/keep-tab/keep-tab.service';
+import { tableRowClassName } from '../../builders/rows/single-row-builder';
+import { uiStateLinkClass } from '../../builders/ui-state-link-builder';
+import { TableEventComponent, TableEventHandler } from '../table-handler-registry';
+import { EventType } from 'core-app/features/work-packages/routing/wp-view-base/event-handling/event-handler-registry';
+
+export class WorkPackageStateLinksHandler implements TableEventHandler {
+  // Injections
+  @LazyInject() public keepTab:KeepTabService;
+
+  @LazyInject() public states:States;
+
+  @LazyInject() public selectionGestures:WorkPackageViewSelectionGesturesService;
+
+  @LazyInject() public wpTableFocus:WorkPackageViewFocusService;
+
+  constructor(public readonly injector:Injector) {
+  }
+
+  public readonly EVENT:EventType = 'click';
+
+  public get SELECTOR() {
+    return `.${uiStateLinkClass}`;
+  }
+
+  public eventScope(view:TableEventComponent) {
+    return view.workPackageTable.tableAndTimelineContainer;
+  }
+
+  protected workPackage:WorkPackageResource;
+
+  public handleEvent(view:TableEventComponent, evt:KeyboardEvent) {
+    evt.stopPropagation();
+
+    // Avoid the state capture when clicking with modifier to allow browser opening in new tab
+    if (evt.shiftKey || evt.ctrlKey || evt.metaKey || evt.altKey) {
+      return true;
+    }
+
+    // Locate the details link from event
+    const target = evt.target as HTMLElement;
+    const element = target.closest<HTMLElement>(this.SELECTOR);
+    if (!element) { return true; }
+
+    const state = element.dataset.wpState;
+    const workPackageId = element.dataset.workPackageId;
+
+    // Normal link processing if there are no state and work package information
+    if (!state || !workPackageId) {
+      return true;
+    }
+
+    // Blur the target to avoid focus being kept there
+    target.closest('a')?.blur();
+
+    // The current row is the last selected work package
+    // not matter what other rows are (de-)selected below.
+    // Thus save that row for the details view button.
+    // Locate the row from event
+    const row = target.closest<HTMLElement>(`.${tableRowClassName}`);
+    if (!row) { return true; }
+
+    this.wpTableFocus.updateFocus(workPackageId, false, false);
+    this.selectionGestures.replace(workPackageId, view.workPackageTable.renderedRows, row.dataset.classIdentifier);
+
+    view.stateLinkClicked.emit({ workPackageId, requestedState: state });
+
+    evt.preventDefault();
+    return false;
+  }
+}

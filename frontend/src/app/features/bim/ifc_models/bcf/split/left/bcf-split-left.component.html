@@ -1,0 +1,7 @@
+@if (showViewer$ | async) {
+  <op-ifc-viewer />
+}
+
+@if ((showViewer$ | async) === false) {
+  <op-bcf-list />
+}

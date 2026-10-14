@@ -1,0 +1,550 @@
+# frozen_string_literal: true
+
+#-- copyright
+# OpenProject is an open source project management software.
+# Copyright (C) the OpenProject GmbH
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License version 3.
+#
+# OpenProject is a fork of ChiliProject, which is a fork of Redmine. The copyright follows:
+# Copyright (C) 2006-2013 Jean-Philippe Lang
+# Copyright (C) 2010-2013 the ChiliProject Team
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+#
+# See COPYRIGHT and LICENSE files for more details.
+#++
+
+require "open_project/plugins"
+
+module Costs
+  class Engine < ::Rails::Engine
+    engine_name :costs
+
+    include OpenProject::Plugins::ActsAsOpEngine
+
+    register "costs", author_url: "https://www.openproject.org", bundled: true, settings: { menu_item: :costs_settings } do
+      project_module :costs do
+        enabled_by_default!
+
+        permission :view_time_entries,
+                   {},
+                   permissible_on: :project,
+                   contract_actions: { time_entries: %i[read] }
+        permission :view_own_time_entries,
+                   {},
+                   permissible_on: %i[work_package project],
+                   contract_actions: { time_entries: %i[read_own] }
+
+        permission :log_own_time,
+                   {},
+                   permissible_on: %i[work_package project],
+                   require: :loggedin,
+                   dependencies: :view_own_time_entries,
+                   contract_actions: { time_entries: %i[create_own] }
+        permission :log_time,
+                   {},
+                   permissible_on: :project,
+                   require: :loggedin,
+                   dependencies: :view_time_entries,
+                   contract_actions: { time_entries: %i[create] }
+
+        permission :edit_own_time_entries,
+                   {},
+                   permissible_on: %i[work_package project],
+                   require: :loggedin,
+                   contract_actions: { time_entries: %i[edit_own destroy_own] }
+        permission :edit_time_entries,
+                   {},
+                   permissible_on: :project,
+                   require: :member,
+                   contract_actions: { time_entries: %i[edit destroy] }
+
+        permission :manage_project_activities,
+                   {
+                     "projects/settings/time_entry_activities": %i[show update],
+                     "projects/settings/cost_types": %i[index toggle]
+                   },
+                   permissible_on: :project,
+                   require: :member
+
+        permission :view_own_hourly_rate,
+                   {},
+                   permissible_on: :project,
+                   contract_actions: { hourly_rates: %i[read_own] }
+        permission :view_hourly_rates,
+                   {},
+                   permissible_on: :project,
+                   contract_actions: { hourly_rates: %i[read] }
+
+        permission :edit_own_hourly_rate,
+                   { hourly_rates: %i[edit update] },
+                   permissible_on: :project,
+                   require: :member,
+                   contract_actions: { hourly_rates: %i[create_own edit_own destroy_own] }
+
+        permission :edit_hourly_rates,
+                   { hourly_rates: %i[edit update] },
+                   permissible_on: :project,
+                   require: :member,
+                   contract_actions: { hourly_rates: %i[create edit destroy] }
+
+        # A default rate has no project, so managing one is granted globally.
+        permission :manage_default_hourly_rates,
+                   {},
+                   permissible_on: :global,
+                   require: :loggedin,
+                   contract_actions: { default_hourly_rates: %i[create edit destroy] }
+
+        permission :view_cost_rates, # cost item values
+                   {},
+                   permissible_on: :project
+
+        permission :log_own_costs, { costlog: %i[new create] },
+                   permissible_on: :project,
+                   require: :loggedin
+        permission :log_costs, { costlog: %i[new create] },
+                   permissible_on: :project,
+                   require: :member
+
+        permission :edit_own_cost_entries, { costlog: %i[edit update destroy] },
+                   permissible_on: :project,
+                   require: :loggedin
+        permission :edit_cost_entries, { costlog: %i[edit update destroy] },
+                   permissible_on: :project,
+                   require: :member
+
+        permission :view_cost_entries,
+                   { costlog: [:index] },
+                   permissible_on: :project
+        permission :view_own_cost_entries,
+                   { costlog: [:index] },
+                   permissible_on: :project
+      end
+
+      # Menu extensions
+      menu :admin_menu,
+           :admin_costs,
+           { controller: "/admin/time_settings", action: :show },
+           if: Proc.new { User.current.admin? },
+           caption: :project_module_costs,
+           after: :enterprise,
+           icon: "op-cost-reports"
+
+      menu :admin_menu,
+           :costs_settings,
+           { controller: "/admin/time_settings", action: :show },
+           if: Proc.new { User.current.admin? },
+           caption: :label_defaults_and_limits,
+           parent: :admin_costs
+
+      menu :admin_menu,
+           :cost_types,
+           { controller: "/admin/cost_types", action: :index },
+           if: ->(*) { User.current.admin? },
+           parent: :admin_costs,
+           caption: :label_cost_type_plural
+
+      menu :admin_menu,
+           :time_entry_activities,
+           { controller: "/admin/settings/time_entry_activities", action: :index },
+           if: ->(*) { User.current.admin? },
+           parent: :admin_costs,
+           caption: :enumeration_activities
+
+      menu :admin_menu,
+           :time_entry_custom_fields,
+           { controller: "/admin/settings/time_entry_custom_fields", action: :index },
+           if: ->(*) { User.current.admin? },
+           parent: :admin_costs,
+           caption: :label_time_entry_custom_field_plural
+
+      menu :my_menu,
+           :hourly_rates,
+           { controller: "/my/hourly_rates", action: "show" },
+           after: :working_hours,
+           caption: ->(*) { HourlyRate.model_name.human(count: 2) },
+           if: ->(*) { ::My::HourlyRatesController.rates_visible?(User.current) },
+           icon: "credit-card"
+    end
+
+    initializer "costs.settings" do
+      ::Settings::Definition.add "costs_currency", default: "€", format: :string
+      ::Settings::Definition.add "costs_currency_format", default: "%n %u", format: :string, allowed: ["%u %n", "%n %u"]
+      ::Settings::Definition.add "allow_tracking_start_and_end_times", default: false, format: :boolean
+      ::Settings::Definition.add "enforce_tracking_start_and_end_times", default: false, format: :boolean
+      ::Settings::Definition.add "time_entries_max_hours_per_entry", default: 0, format: :integer, allowed: (0..)
+      ::Settings::Definition.add "time_entries_max_hours_per_day", default: 0, format: :integer, allowed: (0..)
+      ::Settings::Definition.add "time_entries_prohibit_logging_on_non_working_days", default: false, format: :boolean
+      ::Settings::Definition.add "time_entries_limit_to_user_working_hours", default: false, format: :boolean
+      ::Settings::Definition.add "time_entries_prohibit_logging_for_past_months", default: false, format: :boolean
+      ::Settings::Definition.add "time_entries_past_month_grace_days", default: 0, format: :integer, allowed: (0..)
+    end
+
+    activity_provider :time_entries, class_name: "Activities::TimeEntryActivityProvider", default: false
+
+    replace_principal_references "CostEntry" => %i[logged_by_id user_id]
+
+    include_module "Costs::HasRates", into: %w[User PlaceholderUser]
+    include_module "Projects::Costs", into: "Project"
+    include_module "PermittedParams::Costs", into: "PermittedParams"
+    include_module "WorkPackages::Costs", into: "WorkPackage"
+    include_module "WorkPackages::SpentTime", into: "WorkPackage"
+
+    prepend_module "Costs::ConfiguredCurrency", into: "ActiveSupport::NumberHelper::NumberToCurrencyConverter"
+    prepend_module "Members::TableCurrentUser", into: "MembersController"
+    prepend_module "Members::CurrentRateColumn", into: "Members::TableComponent"
+    prepend_module "Members::CurrentRateCell", into: "Members::RowComponent"
+
+    add_tab_entry :user,
+                  name: "rates",
+                  partial: "users/rates",
+                  path: ->(params) { edit_user_path(params[:user], tab: :rates) },
+                  only_if: ->(*) { User.current.allowed_globally?(:manage_default_hourly_rates) },
+                  label: :caption_rate_history
+
+    add_tab_entry :placeholder_user,
+                  name: "rates",
+                  partial: "placeholder_users/rates",
+                  path: ->(params) { edit_placeholder_user_path(params[:placeholder_user], tab: :rates) },
+                  only_if: ->(*) { User.current.allowed_globally?(:manage_default_hourly_rates) },
+                  label: :caption_rate_history
+
+    add_api_path :cost_entry do |id|
+      "#{root}/cost_entries/#{id}"
+    end
+
+    add_api_path :cost_entries_by_work_package do |id|
+      "#{work_package(id)}/cost_entries"
+    end
+
+    add_api_path :summarized_work_package_costs_by_type do |id|
+      "#{work_package(id)}/summarized_costs_by_type"
+    end
+
+    add_api_path :cost_type do |id|
+      "#{root}/cost_types/#{id}"
+    end
+
+    # Placeholder users hold rates too, so the collection hangs off the
+    # principal rather than the user.
+    add_api_path :hourly_rates_by_principal do |principal_id|
+      "#{principals}/#{principal_id}/hourly_rates"
+    end
+
+    add_api_path :hourly_rate do |principal_id, id|
+      "#{hourly_rates_by_principal(principal_id)}/#{id}"
+    end
+
+    add_api_endpoint "API::V3::Root" do
+      mount ::API::V3::CostEntries::CostEntriesAPI
+      mount ::API::V3::CostTypes::CostTypesAPI
+      mount ::API::V3::TimeEntries::TimeEntriesAPI
+    end
+
+    add_api_endpoint "API::V3::Principals::PrincipalsAPI", :id do
+      mount ::API::V3::HourlyRates::HourlyRatesByPrincipalAPI
+    end
+
+    add_api_endpoint "API::V3::WorkPackages::WorkPackagesAPI", :id do
+      mount ::API::V3::CostEntries::CostEntriesByWorkPackageAPI
+    end
+
+    extend_api_response(:v3, :work_packages, :work_package) do
+      include Redmine::I18n
+      include ActionView::Helpers::NumberHelper
+      prepend API::V3::CostsApiUserPermissionCheck
+
+      link :logTime,
+           cache_if: -> { log_time_allowed? } do
+        next if represented.new_record?
+
+        {
+          href: api_v3_paths.time_entries,
+          title: "Log time on work package '#{represented.subject}'"
+        }
+      end
+
+      link :timeEntries,
+           cache_if: -> { view_time_entries_allowed? } do
+        next if represented.new_record?
+
+        filters = [
+          { entity_type: { operator: "=", values: ["WorkPackage"] } },
+          { entity_id: { operator: "=", values: [represented.id.to_s] } }
+        ]
+
+        {
+          href: api_v3_paths.path_for(:time_entries, filters:),
+          title: "Time entries"
+        }
+      end
+
+      property :spent_time,
+               exec_context: :decorator,
+               getter: ->(*) { datetime_formatter.format_duration_from_hours(represented.spent_hours) },
+               setter: ->(*) {},
+               if: ->(*) { spent_time_visible? },
+               uncacheable: true
+
+      link :logCosts,
+           cache_if: -> {
+             current_user.allowed_in_project?(:log_costs, represented.project) ||
+             current_user.allowed_in_project?(:log_own_costs, represented.project)
+           } do
+        next unless represented.costs_enabled? && represented.persisted?
+        next unless represented.project&.cost_types_available?
+
+        {
+          href: new_work_packages_cost_entry_path(represented),
+          type: "text/html",
+          title: "Log costs on #{represented.subject}"
+        }
+      end
+
+      link :showCosts,
+           cache_if: -> {
+             current_user.allowed_in_project?(:view_cost_entries, represented.project) ||
+             current_user.allowed_in_project?(:view_own_cost_entries, represented.project)
+           } do
+        next unless represented.persisted? && represented.project&.costs_enabled?
+
+        filters = ::CostReports::CompactFilters.new(operators: { "work_package_id" => "=" },
+                                                    values: { "work_package_id" => [represented.id] })
+
+        {
+          href: project_reporting_cost_reports_path(represented.project_id, **filters.to_params),
+          type: "text/html",
+          title: "Show cost entries"
+        }
+      end
+
+      property :labor_costs,
+               exec_context: :decorator,
+               if: ->(*) { labor_costs_visible? },
+               skip_parse: true,
+               render_nil: true,
+               uncacheable: true
+
+      property :material_costs,
+               exec_context: :decorator,
+               if: ->(*) { material_costs_visible? },
+               skip_parse: true,
+               render_nil: true,
+               uncacheable: true
+
+      property :overall_costs,
+               exec_context: :decorator,
+               if: ->(*) { overall_costs_visible? },
+               skip_parse: true,
+               render_nil: true,
+               uncacheable: true
+
+      resource :costsByType,
+               link: ->(*) {
+                 next unless costs_by_type_visible?
+
+                 {
+                   href: api_v3_paths.summarized_work_package_costs_by_type(represented.id)
+                 }
+               },
+               getter: ->(*) {
+                 ::API::V3::CostEntries::WorkPackageCostsByTypeRepresenter.new(represented, current_user:)
+               },
+               setter: ->(*) {},
+               skip_render: ->(*) { !costs_by_type_visible? }
+
+      send(:define_method, :overall_costs) do
+        number_to_currency(represented.overall_costs)
+      end
+
+      send(:define_method, :labor_costs) do
+        number_to_currency(represented.labor_costs)
+      end
+
+      send(:define_method, :material_costs) do
+        number_to_currency(represented.material_costs)
+      end
+    end
+
+    extend_api_response(:v3, :work_packages, :schema, :work_package_schema) do
+      costs_visible = ->(*) { represented.project&.costs_enabled? }
+
+      # Unit costs (and the overall total) require an available cost type.
+      # instance_exec keeps `represented` bound to the decorator.
+      unit_costs_visible = ->(*) {
+        instance_exec(&costs_visible) && represented.project.cost_types_available?
+      }
+
+      schema :spent_time,
+             type: "Duration",
+             required: false,
+             show_if: ->(*) {
+               current_user.allowed_in_project?(:view_time_entries, represented.project) ||
+                 current_user.allowed_in_any_work_package?(:view_own_time_entries, in_project: represented.project)
+             }
+
+      # N.B. in the long term we should have a type like "Currency", but that requires a proper
+      # format and not a string like "10 EUR"
+      schema :overall_costs,
+             type: "String",
+             required: false,
+             writable: false,
+             show_if: unit_costs_visible
+
+      schema :labor_costs,
+             type: "String",
+             required: false,
+             writable: false,
+             show_if: costs_visible
+
+      schema :material_costs,
+             type: "String",
+             required: false,
+             writable: false,
+             show_if: unit_costs_visible
+
+      schema :costs_by_type,
+             type: "Collection",
+             name_source: :spent_units,
+             required: false,
+             show_if: unit_costs_visible,
+             writable: false
+    end
+
+    extend_api_response(:v3, :work_packages, :work_package_sums) do
+      include ActionView::Helpers::NumberHelper
+
+      property :overall_costs,
+               exec_context: :decorator,
+               getter: ->(*) {
+                 number_to_currency(represented.overall_costs)
+               }
+
+      property :labor_costs,
+               exec_context: :decorator,
+               getter: ->(*) {
+                 number_to_currency(represented.labor_costs)
+               }
+
+      property :material_costs,
+               exec_context: :decorator,
+               getter: ->(*) {
+                 number_to_currency(represented.material_costs)
+               }
+    end
+
+    extend_api_response(:v3, :work_packages, :schema, :work_package_sums_schema) do
+      schema :overall_costs,
+             type: "String",
+             required: false,
+             writable: false
+
+      schema :labor_costs,
+             type: "String",
+             required: false,
+             writable: false
+
+      schema :material_costs,
+             type: "String",
+             required: false,
+             writable: false
+    end
+
+    config.to_prepare do
+      # Load Enumeration descendants due to STI
+      TimeEntryActivity
+
+      OpenProject::ProjectLatestActivity.register on: "TimeEntry"
+
+      ##
+      # Add a new group
+      cost_attributes = %i(costs_by_type labor_costs material_costs overall_costs)
+      ::TypeVariant.add_default_mapping(:estimates_and_progress, :spent_time)
+      ::TypeVariant.add_default_group(:costs, :label_cost_plural)
+      ::TypeVariant.add_default_mapping(:costs, *cost_attributes)
+
+      # Unit costs (and the overall total they feed into) are meaningless without a
+      # cost type, so they are hidden when none is available in the project.
+      unit_costs_constraint = ->(_type, project: nil) {
+        project.nil? || (project.costs_enabled? && project.cost_types_available?)
+      }
+      # Labor costs come from time entries and stay visible regardless.
+      costs_constraint = ->(_type, project: nil) {
+        project.nil? || project.costs_enabled?
+      }
+
+      ::TypeVariant.add_constraint :labor_costs, costs_constraint
+      %i(costs_by_type material_costs overall_costs).each do |attribute|
+        ::TypeVariant.add_constraint attribute, unit_costs_constraint
+      end
+
+      ::Queries::Register.register(::Query) do
+        select Costs::QueryCurrencySelect
+      end
+
+      ::Exports::Register.register do
+        formatter WorkPackage, WorkPackage::Exports::Formatters::SpentUnits
+        formatter WorkPackage, WorkPackage::Exports::Formatters::XLS::Costs
+        formatter WorkPackage, WorkPackage::Exports::Formatters::PDF::Currency
+      end
+
+      ::Queries::Register.register(::ProjectQuery) do
+        filter ::Queries::Projects::Filters::AvailableCostTypesProjectsFilter
+      end
+
+      ::API::V3::WorkPackages::WorkPackageEagerLoadingWrapper
+        .add_eager_loading_extension(:spent_time) do |eager_scope, work_package_scope, current_user|
+          time_scope = work_package_scope
+                         .dup
+                         .include_spent_time(current_user)
+                         .select(:id)
+
+          wp_table = ::WorkPackage.arel_table
+          spent_time_join = wp_table
+                              .outer_join(time_scope.arel.as("spent_time_hours"))
+                              .on(wp_table[:id].eq(time_scope.arel_table.alias("spent_time_hours")[:id]))
+
+          eager_scope
+            .joins(spent_time_join.join_sources)
+            .select("spent_time_hours.hours")
+        end
+
+      ::API::V3::WorkPackages::WorkPackageEagerLoadingWrapper
+        .add_eager_loading_extension(:material_costs) do |eager_scope, work_package_scope, _current_user|
+          material_scope = ::WorkPackage::MaterialCosts.new.add_to_work_package_collection(work_package_scope.dup)
+
+          eager_scope
+            .joins(material_scope.arel.join_sources)
+            .select(material_scope.select_values)
+        end
+
+      ::API::V3::WorkPackages::WorkPackageEagerLoadingWrapper
+        .add_eager_loading_extension(:labor_costs) do |eager_scope, work_package_scope, _current_user|
+          labor_scope = ::WorkPackage::LaborCosts.new.add_to_work_package_collection(work_package_scope.dup)
+
+          eager_scope
+            .joins(labor_scope.arel.join_sources)
+            .select(labor_scope.select_values)
+        end
+
+      McpTools.register McpTools::CreateTimeEntry,
+                        McpTools::DeleteTimeEntry,
+                        McpTools::SearchTimeEntries,
+                        McpTools::UpdateTimeEntry
+    end
+  end
+end

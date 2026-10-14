@@ -1,0 +1,23 @@
+<%= content_tag(:div, class: "FormControl-advanced-checkbox-wrap", hidden: @input.hidden?) do %>
+  <%= builder.label(@input.name, **@input.label_arguments) do %>
+    <div class="FormControl-advanced-checkbox-content">
+      <%= builder.check_box(@input.name, @input.input_arguments, checked_value, unchecked_value) %>
+      <div>
+        <div class="FormControl-advanced-checkbox-label-text">
+          <% if @input.leading_icon.present? %>
+            <%= render(Primer::Beta::Octicon.new(icon: @input.leading_icon, classes: "FormControl-advanced-checkbox-icon", "aria-hidden": true)) %>
+          <% end %>
+          <span><%= @input.label %></span>
+        </div>
+        <% if @input.form_control? %>
+          <div class="mt-1">
+            <%= render(Caption.new(input: @input)) %>
+          </div>
+        <% end %>
+      </div>
+      <% if @input.trailing_image.present? %>
+        <%= inline_svg_tag(@input.trailing_image, class: "FormControl-advanced-checkbox-icon", aria_hidden: true) %>
+      <% end %>
+    </div>
+  <% end %>
+<% end %>

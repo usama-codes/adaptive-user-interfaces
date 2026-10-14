@@ -1,0 +1,18 @@
+<op-basic-single-datetime-picker (valueChange)="begin = $event"
+  [value]="begin"
+  [opAutofocus]="shouldFocus"
+  required="true"
+  [id]="'values-' + filter.id + '-begin'"
+  [name]="'v[' + filter.id + ']-begin'"
+  class="advanced-filters--date-field"
+ />
+
+<span class="advanced-filters--affix" [textContent]="text.spacer">
+</span>
+
+<op-basic-single-datetime-picker (valueChange)="end = $event"
+  [value]="end"
+  [id]="'values-' + filter.id + '-end'"
+  [name]="'v[' + filter.id + ']-end'"
+  class="advanced-filters--date-field"
+ />

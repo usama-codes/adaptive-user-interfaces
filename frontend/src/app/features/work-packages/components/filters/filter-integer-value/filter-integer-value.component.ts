@@ -1,0 +1,72 @@
+//-- copyright
+// OpenProject is an open source project management software.
+// Copyright (C) the OpenProject GmbH
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License version 3.
+//
+// OpenProject is a fork of ChiliProject, which is a fork of Redmine. The copyright follows:
+// Copyright (C) 2006-2013 Jean-Philippe Lang
+// Copyright (C) 2010-2013 the ChiliProject Team
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License
+// as published by the Free Software Foundation; either version 2
+// of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program. If not, see <https://www.gnu.org/licenses/>.
+//
+// See COPYRIGHT and LICENSE files for more details.
+//++
+
+import { ChangeDetectionStrategy, Component, Input, Output, inject } from '@angular/core';
+import { I18nService } from 'core-app/core/i18n/i18n.service';
+import { DebouncedEventEmitter } from 'core-app/shared/helpers/rxjs/debounced-event-emitter';
+import { UntilDestroyedMixin } from 'core-app/shared/helpers/angular/until-destroyed.mixin';
+import { componentDestroyed } from '@w11k/ngx-componentdestroyed';
+import { QueryFilterInstanceResource } from 'core-app/features/hal/resources/query-filter-instance-resource';
+
+const DAYS_OPERATORS = ['<t+', '>t+', 't+', '<t-', '>t-', 't-'];
+
+@Component({
+  selector: 'op-filter-integer-value',
+  templateUrl: './filter-integer-value.component.html',
+  standalone: false,
+  // TODO: This component has been partially migrated to be zoneless-compatible.
+  // After testing, this should be updated to ChangeDetectionStrategy.OnPush.
+  // eslint-disable-next-line @angular-eslint/prefer-on-push-component-change-detection
+  changeDetection: ChangeDetectionStrategy.Eager,
+})
+export class FilterIntegerValueComponent extends UntilDestroyedMixin {
+  readonly I18n = inject(I18nService);
+
+  @Input() public shouldFocus = false;
+
+  @Input() public filter:QueryFilterInstanceResource;
+
+  @Output() public filterChanged = new DebouncedEventEmitter<QueryFilterInstanceResource>(componentDestroyed(this));
+
+  public get value() {
+    return parseInt(this.filter.values[0] as string);
+  }
+
+  public set value(val) {
+    if (typeof (val) === 'number') {
+      this.filter.values = [val.toString()];
+    } else {
+      this.filter.values = [];
+    }
+
+    this.filterChanged.emit(this.filter);
+  }
+
+  public get unit() {
+    return DAYS_OPERATORS.includes(this.filter.operator?.id) ? this.I18n.t('js.work_packages.time_relative.days') : '';
+  }
+}

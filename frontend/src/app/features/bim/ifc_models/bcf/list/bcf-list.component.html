@@ -1,0 +1,42 @@
+@if ((showResultOverlay$ | async) && showTableView) {
+  <div class="op-bcf-list--result-overlay"
+  ></div>
+}
+
+<!-- TABLE representation of the WP -->
+@if (tableInformationLoaded && showTableView) {
+  <div class="op-bcf-list--work-packages-split-view--tabletimeline-container"
+    [ngClass]="{ '_with-resizer': showResizer }"
+    >
+    <wp-table [projectIdentifier]="CurrentProject.identifier"
+      [configuration]="wpTableConfiguration"
+      (itemClicked)="handleWorkPackageClicked($event)"
+      (stateLinkClicked)="openStateLink($event)"
+      class="work-packages-split-view--tabletimeline-content" />
+  </div>
+}
+
+@if (showResizer) {
+  <wp-resizer elementClass="op-bcf-list"
+    localStorageKey="openProject-splitViewFlexBasis" />
+}
+
+<!-- GRID representation of the WP -->
+@if (!showTableView) {
+  <div
+    class="op-bcf-list--work-packages--card-view-container"
+    [ngClass]="{ '_with-resizer': showResizer }">
+    <wp-grid [configuration]="wpTableConfiguration"
+      [showResizer]="false"
+      (itemClicked)="handleWorkPackageClicked($event)"
+      (stateLinkClicked)="openStateLink($event)" />
+  </div>
+}
+
+<!-- Footer -->
+@if (tableInformationLoaded) {
+  <div class="work-packages-split-view--tabletimeline-footer hide-when-print"
+    >
+    <wp-table-pagination />
+  </div>
+}

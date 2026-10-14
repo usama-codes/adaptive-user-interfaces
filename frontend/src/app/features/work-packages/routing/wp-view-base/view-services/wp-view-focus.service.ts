@@ -1,0 +1,120 @@
+//-- copyright
+// OpenProject is an open source project management software.
+// Copyright (C) the OpenProject GmbH
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License version 3.
+//
+// OpenProject is a fork of ChiliProject, which is a fork of Redmine. The copyright follows:
+// Copyright (C) 2006-2013 Jean-Philippe Lang
+// Copyright (C) 2010-2013 the ChiliProject Team
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License
+// as published by the Free Software Foundation; either version 2
+// of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program. If not, see <https://www.gnu.org/licenses/>.
+//
+// See COPYRIGHT and LICENSE files for more details.
+//++
+
+import { Injectable, inject } from '@angular/core';
+import { Observable } from 'rxjs';
+import { distinctUntilChanged, filter, map } from 'rxjs/operators';
+import { WorkPackageViewBaseService } from 'core-app/features/work-packages/routing/wp-view-base/view-services/wp-view-base.service';
+import { QueryResource } from 'core-app/features/hal/resources/query-resource';
+import { WorkPackageCollectionResource } from 'core-app/features/hal/resources/wp-collection-resource';
+import { WorkPackageViewSelectionService } from './wp-view-selection.service';
+
+export interface WPFocusState {
+  workPackageId:string;
+  focusAfterRender:boolean;
+  navigate:boolean;
+}
+
+@Injectable()
+export class WorkPackageViewFocusService extends WorkPackageViewBaseService<WPFocusState> {
+  private readonly selection = inject(WorkPackageViewSelectionService);
+
+  public isFocused(workPackageId:string) {
+    return this.current?.workPackageId === workPackageId;
+  }
+
+  public ifShouldFocus(callback:(workPackageId:string) => void) {
+    const value = this.current;
+
+    if (value?.focusAfterRender) {
+      callback(value.workPackageId);
+      value.focusAfterRender = false;
+      this.update(value);
+    }
+  }
+
+  public get focusedWorkPackage():string|null {
+    const value = this.current;
+
+    if (value) {
+      return value.workPackageId;
+    }
+
+    // Return the first result if none selected
+    const results = this.querySpace.results.value;
+    if (results && results.elements.length > 0) {
+      return results.elements[0].id!.toString();
+    }
+
+    return null;
+  }
+
+  public whenChanged():Observable<string> {
+    return this.live$()
+      .pipe(
+        map((val:WPFocusState) => val.workPackageId),
+        distinctUntilChanged(),
+      );
+  }
+
+  public whenNavigationRequested():Observable<string> {
+    return this.live$()
+      .pipe(
+        filter((val:WPFocusState) => val.navigate),
+        map((val:WPFocusState) => val.workPackageId),
+        distinctUntilChanged(),
+      );
+  }
+
+  /**
+   * Selects the work package a detail view opened or a creation produced,
+   * then focuses it.
+   *
+   * @remarks
+   * Selection happens only when nothing is selected; an existing batch, its
+   * anchor and its range session stay as the user left them. When
+   * initialization adds membership, it publishes that membership before
+   * emitting focus. Ordinary focus movement goes through {@link updateFocus},
+   * which never touches selection.
+   *
+   * @param workPackageId - The work package the view opened or created.
+   * @param setFocusAfterRender - Whether the row should receive DOM focus once rendered.
+   * @param navigate - Whether the split view should follow the work package.
+   */
+  public initializeSelectionAndFocus(workPackageId:string, setFocusAfterRender = false, navigate = true):void {
+    this.selection.ensureSelected(workPackageId);
+    this.updateFocus(workPackageId, setFocusAfterRender, navigate);
+  }
+
+  public updateFocus(workPackageId:string, setFocusAfterRender = false, navigate = true) {
+    this.update({ workPackageId, focusAfterRender: setFocusAfterRender, navigate });
+  }
+
+  valueFromQuery(_query:QueryResource, _results:WorkPackageCollectionResource):WPFocusState|undefined {
+    return undefined;
+  }
+}

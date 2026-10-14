@@ -1,0 +1,96 @@
+# frozen_string_literal: true
+
+#-- copyright
+# OpenProject is an open source project management software.
+# Copyright (C) the OpenProject GmbH
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License version 3.
+#
+# OpenProject is a fork of ChiliProject, which is a fork of Redmine. The copyright follows:
+# Copyright (C) 2006-2013 Jean-Philippe Lang
+# Copyright (C) 2010-2013 the ChiliProject Team
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+#
+# See COPYRIGHT and LICENSE files for more details.
+#++
+
+module WorkPackage::AskBeforeDestruction
+  extend ActiveSupport::Concern
+
+  DestructionRegistration = Struct.new(:klass, :check, :action)
+
+  included do
+    cattr_accessor :registered_associated_to_ask_before_destruction,
+                   instance_accessor: false,
+                   default: []
+  end
+
+  class_methods do
+    def cleanup_action_required_before_destructing?(work_packages)
+      !associated_to_ask_before_destruction_of(work_packages).empty?
+    end
+
+    def cleanup_associated_before_destructing_if_required(work_packages, user, to_do = { action: "destroy" })
+      cleanup_required = cleanup_action_required_before_destructing?(work_packages)
+
+      !cleanup_required ||
+       (cleanup_required &&
+        cleanup_each_associated_class(work_packages, user, to_do))
+    end
+
+    def associated_classes_to_address_before_destruction_of(work_packages)
+      associated = []
+
+      registered_associated_to_ask_before_destruction.each do |registration|
+        associated << registration.klass if registration.check.call(work_packages)
+      end
+
+      associated
+    end
+
+    private
+
+    def associated_to_ask_before_destruction_of(work_packages)
+      associated = {}
+
+      registered_associated_to_ask_before_destruction.each do |registration|
+        associated[registration.klass] = registration.action if registration.check.call(work_packages)
+      end
+
+      associated
+    end
+
+    def associated_to_ask_before_destruction(klass, check, action)
+      registered_associated_to_ask_before_destruction << DestructionRegistration.new(klass, check, action)
+    end
+
+    def cleanup_each_associated_class(work_packages, user, to_do)
+      all_succeeded = true
+
+      transaction do
+        associated_to_ask_before_destruction_of(work_packages).each_value do |method|
+          succeeded = method.call(work_packages, user, to_do)
+          all_succeeded &&= succeeded
+        end
+
+        raise ActiveRecord::Rollback unless all_succeeded
+      end
+
+      all_succeeded
+    end
+  end
+end

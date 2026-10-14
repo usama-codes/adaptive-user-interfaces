@@ -1,0 +1,48 @@
+@import "helpers"
+
+.global-search
+  flex-grow: 1
+
+  @media screen and (max-width: $breakpoint-md)
+    display: none
+
+  &--input[type="text"]
+    // Uppercase letters with accents like Ü and Â would get cut off
+    line-height: 20px
+    padding-left: 25px !important
+
+    @media screen and (max-width: $breakpoint-md)
+      padding-left: 0 !important
+
+  &--option,
+  &--option:hover
+    padding: 5px 5px
+    line-height: 15px
+    min-height: 25px  // line-height + padding
+    word-break: break-word
+    color: var(--body-font-color)
+    text-decoration: none
+    display: flex
+
+    .op-autocompleter--wp-wrapper
+      flex-grow: 1
+      overflow: hidden
+      padding: 0
+
+  &--search-term
+    flex-grow: 1
+
+  &--project-scope
+    flex-grow: 0
+    flex-shrink: 1
+    border: 1px solid var(--button-default-borderColor-rest)
+    font-size: var(--text-body-size-small)
+    background: var(--button--background-color)
+    border-radius: 2px
+    padding: 0 4px
+    color: var(--body-font-color)
+
+  &--principal
+    margin-right: 5px
+    // Principal has a rounded avatar, it feels better aligned if moved a little over the line
+    margin-left: -5px

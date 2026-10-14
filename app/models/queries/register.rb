@@ -1,0 +1,104 @@
+# frozen_string_literal: true
+
+#-- copyright
+# OpenProject is an open source project management software.
+# Copyright (C) the OpenProject GmbH
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License version 3.
+#
+# OpenProject is a fork of ChiliProject, which is a fork of Redmine. The copyright follows:
+# Copyright (C) 2006-2013 Jean-Philippe Lang
+# Copyright (C) 2010-2013 the ChiliProject Team
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+#
+# See COPYRIGHT and LICENSE files for more details.
+#++
+
+module Queries::Register
+  class << self
+    def filter(query, filter)
+      filters[query] << filter
+    end
+
+    # Mark a registered filter as not to be offered to the user. It keeps working when set
+    # programmatically or on a stored query, but is left out of the filters collection
+    # representer and of the filter form.
+    def exclude(query, filter)
+      excluded_filters[query] << filter
+    end
+
+    def order(query, order)
+      orders[query] << order
+    end
+
+    def group_by(query, group_by)
+      group_bys[query] << group_by
+    end
+
+    def select(query, select)
+      selects[query] << select
+    end
+
+    def register(query, &)
+      Registration.new(query).instance_exec(&)
+    end
+
+    def filters = @filters ||= build_registry
+
+    def excluded_filters = @excluded_filters ||= build_registry
+
+    def orders = @orders ||= build_registry
+
+    def selects = @selects ||= build_registry
+
+    def group_bys = @group_bys ||= build_registry
+
+    private
+
+    def build_registry
+      Hash.new { |hash, query| hash[query] = [] }
+    end
+  end
+
+  class Registration
+    attr_reader :query
+
+    def initialize(query)
+      @query = query
+    end
+
+    def filter(filter)
+      Queries::Register.filter(query, filter)
+    end
+
+    def exclude(filter)
+      Queries::Register.exclude(query, filter)
+    end
+
+    def order(order)
+      Queries::Register.order(query, order)
+    end
+
+    def group_by(group_by)
+      Queries::Register.group_by(query, group_by)
+    end
+
+    def select(select)
+      Queries::Register.select(query, select)
+    end
+  end
+end

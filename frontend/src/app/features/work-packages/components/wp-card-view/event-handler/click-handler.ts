@@ -1,0 +1,96 @@
+//-- copyright
+// OpenProject is an open source project management software.
+// Copyright (C) the OpenProject GmbH
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License version 3.
+//
+// OpenProject is a fork of ChiliProject, which is a fork of Redmine. The copyright follows:
+// Copyright (C) 2006-2013 Jean-Philippe Lang
+// Copyright (C) 2010-2013 the ChiliProject Team
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License
+// as published by the Free Software Foundation; either version 2
+// of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program. If not, see <https://www.gnu.org/licenses/>.
+//
+// See COPYRIGHT and LICENSE files for more details.
+//++
+
+import { Injector } from '@angular/core';
+import { CardEventHandler } from 'core-app/features/work-packages/components/wp-card-view/event-handler/card-view-handler-registry';
+import { WorkPackageCardViewComponent } from 'core-app/features/work-packages/components/wp-card-view/wp-card-view.component';
+import { WorkPackageViewSelectionGesturesService } from 'core-app/features/work-packages/routing/wp-view-base/view-services/wp-view-selection-gestures.service';
+import { WorkPackageViewFocusService } from 'core-app/features/work-packages/routing/wp-view-base/view-services/wp-view-focus.service';
+import { WorkPackageCardViewService } from 'core-app/features/work-packages/components/wp-card-view/services/wp-card-view.service';
+import { DeviceService } from 'core-app/core/browser/device.service';
+import { LazyInject } from 'core-app/shared/helpers/angular/lazy-inject.decorator';
+import { EventType } from 'core-app/features/work-packages/routing/wp-view-base/event-handling/event-handler-registry';
+
+export class CardClickHandler implements CardEventHandler {
+  // Injections
+  @LazyInject() deviceService:DeviceService;
+
+  @LazyInject() selectionGestures:WorkPackageViewSelectionGesturesService;
+
+  @LazyInject() wpTableFocus:WorkPackageViewFocusService;
+
+  @LazyInject() wpCardView:WorkPackageCardViewService;
+
+  constructor(public readonly injector:Injector,
+    card:WorkPackageCardViewComponent) {
+  }
+
+  public get EVENT():EventType {
+    return 'click';
+  }
+
+  public get SELECTOR() {
+    return '[data-test-selector="op-wp-single-card"]';
+  }
+
+  public eventScope(card:WorkPackageCardViewComponent) {
+    return card.container.nativeElement;
+  }
+
+  public handleEvent(card:WorkPackageCardViewComponent, evt:MouseEvent) {
+    const target = evt.target as HTMLElement;
+
+    // Ignore links
+    if (target instanceof HTMLAnchorElement || target.parentElement instanceof HTMLAnchorElement) {
+      return true;
+    }
+
+    // Locate the card from event
+    const element = target.closest<HTMLElement>('wp-single-card')!;
+    const wpId = element.dataset.workPackageId;
+
+    if (!wpId) {
+      return true;
+    }
+
+    this.handleWorkPackage(card, wpId, evt, element.dataset.classIdentifier);
+
+    return false;
+  }
+
+  protected handleWorkPackage(card:WorkPackageCardViewComponent, wpId:string, evt:MouseEvent, classIdentifier?:string) {
+    this.setSelection(wpId, evt, classIdentifier);
+
+    card.itemClicked.emit({ workPackageId: wpId, double: false });
+  }
+
+  protected setSelection(wpId:string, evt:MouseEvent, classIdentifier?:string) {
+    this.selectionGestures.handleClick(wpId, this.wpCardView.renderedCards, evt, classIdentifier);
+
+    this.wpTableFocus.updateFocus(wpId);
+  }
+}

@@ -1,0 +1,282 @@
+# frozen_string_literal: true
+
+#-- copyright
+# OpenProject is an open source project management software.
+# Copyright (C) the OpenProject GmbH
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License version 3.
+#
+# OpenProject is a fork of ChiliProject, which is a fork of Redmine. The copyright follows:
+# Copyright (C) 2006-2013 Jean-Philippe Lang
+# Copyright (C) 2010-2013 the ChiliProject Team
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+#
+# See COPYRIGHT and LICENSE files for more details.
+#++
+
+module CustomStylesHelper
+  include TabsHelper
+
+  def pdf_tab?
+    selected = selected_tab(design_tabs)
+    selected && selected[:pdf]
+  end
+
+  def show_theme_selector?
+    selected = selected_tab(design_tabs)
+    selected && %w[interface branding].include?(selected[:name])
+  end
+
+  def default_colors_tab?
+    selected_tab(design_tabs)&.dig(:name) == "default_colors"
+  end
+
+  def design_color_groups
+    colors = DesignColor.setables.index_by(&:variable)
+
+    {
+      base_colors: %w[primary-button-color accent-color],
+      top_header_colors: %w[header-bg-color],
+      main_menu: %w[main-menu-bg-color main-menu-bg-selected-background]
+    }.filter_map do |name, variables|
+      group_colors = variables.filter_map { |variable| colors[variable] }
+      [name, group_colors] if group_colors.any?
+    end
+  end
+
+  def effective_design_color(design_color, current_theme:)
+    design_color.hexcode.presence || color_theme(current_theme).fetch(:colors).fetch(design_color.variable)
+  end
+
+  def design_tabs
+    [
+      {
+        name: "interface",
+        partial: "custom_styles/interface",
+        path: custom_style_path(tab: :interface),
+        label: t(:"admin.custom_styles.tab_interface")
+      },
+      {
+        name: "branding",
+        partial: "custom_styles/branding",
+        path: custom_style_path(tab: :branding),
+        label: t(:"admin.custom_styles.tab_branding")
+      },
+      {
+        name: "default_colors",
+        partial: "custom_styles/default_colors",
+        path: custom_style_path(tab: :default_colors),
+        label: t(:"admin.custom_styles.tab_default_colors")
+      },
+      {
+        name: "pdf_export_styles",
+        partial: "custom_styles/pdf_export_styles",
+        path: custom_style_path(tab: :pdf_export_styles),
+        label: t(:"admin.custom_styles.tab_pdf_export_styles"),
+        pdf: true
+      },
+      {
+        name: "pdf_export_font",
+        partial: "custom_styles/pdf_export_font",
+        path: custom_style_path(tab: :pdf_export_font),
+        label: t(:"admin.custom_styles.tab_pdf_export_font"),
+        pdf: true
+      }
+    ]
+  end
+
+  def apply_custom_styles?(skip_ee_check: OpenProject::Configuration.bim?)
+    # Apply custom styles either if EE allows OR we are on a BIM edition with the BIM theme active.
+    CustomStyle.current.present? &&
+      (EnterpriseToken.allows_to?(:define_custom_style) || skip_ee_check)
+  end
+
+  def mobile_logo_present?
+    return false unless apply_custom_styles?
+
+    style = CustomStyle.current
+    CustomStyle::LOGO_FIELDS.fetch(:mobile).values.any? do |field|
+      style.public_send(field).present?
+    end
+  end
+
+  def mobile_logo_modes
+    modes = CustomStyle::LOGO_FIELDS.fetch(:mobile).keys
+    return modes unless apply_custom_styles?
+
+    style = CustomStyle.current
+
+    modes.select do |mode|
+      color_mode = mode == :dark ? :dark : :light
+      high_contrast = mode == :light_high_contrast
+      mobile_logo = style.logo_for(
+        color_mode:,
+        high_contrast:,
+        mobile: true
+      )
+      desktop_logo = style.logo_for(color_mode:, high_contrast:)
+
+      mobile_logo.present? || desktop_logo.blank?
+    end
+  end
+
+  def custom_logo_url(custom_style, attachment)
+    return if attachment.blank?
+
+    field = attachment.mounted_as
+    custom_style_logo_path(
+      digest: custom_style.digest,
+      filename: custom_style.public_send(:"#{field}_identifier"),
+      field:
+    )
+  end
+
+  def custom_logo_urls(custom_style)
+    CustomStyle::LOGO_FIELDS.to_h do |key, fields|
+      modes = fields.keys.to_h do |mode|
+        attachment = custom_style.logo_for(
+          color_mode: mode == :dark ? :dark : :light,
+          high_contrast: mode == :light_high_contrast,
+          mobile: key == :mobile
+        )
+
+        [mode, custom_logo_url(custom_style, attachment)]
+      end
+
+      [key, modes]
+    end
+  end
+
+  def resolved_logo_urls
+    defaults = default_logo_urls
+    return defaults unless apply_custom_styles?
+
+    logo_urls_with_custom_style(CustomStyle.current, defaults)
+  end
+
+  def custom_logo_uploads(custom_style, mobile: false)
+    CustomStyle::LOGO_FIELDS.fetch(mobile ? :mobile : :desktop).map do |mode, field|
+      custom_logo_upload(custom_style, mode:, field:)
+    end
+  end
+
+  # The default favicon and touch icons are both the same for normal OP and BIM.
+  def apply_custom_favicon?
+    apply_custom_styles?(skip_ee_check: false) && CustomStyle.current.favicon.present?
+  end
+
+  # The default favicon and touch icons are both the same for normal OP and BIM.
+  def apply_custom_touch_icon?
+    apply_custom_styles?(skip_ee_check: false) && CustomStyle.current.touch_icon.present?
+  end
+
+  def export_fonts_fields(custom_style)
+    %i[regular bold italic bold_italic].map do |variant|
+      field = :"export_font_#{variant}"
+      font = custom_style.public_send(field)
+      {
+        field: field,
+        label: I18n.t("label_custom_export_font_#{variant}"),
+        present: font.present?,
+        filename: custom_style.id && font.present? ? File.basename(font.file.path) : nil,
+        delete_path: public_send(:"custom_style_export_font_#{variant}_delete_path"),
+        instructions: I18n.t("text_custom_export_font_#{variant}_instructions")
+      }
+    end
+  end
+
+  private
+
+  def color_theme(current_theme)
+    OpenProject::CustomStyles::ColorThemes.themes.find do |theme|
+      theme[:theme] == current_theme
+    end || OpenProject::CustomStyles::ColorThemes.themes.first
+  end
+
+  def default_logo_urls
+    desktop_light = asset_path(I18n.locale == :ru ? "logo-white-bg-ua.png" : "logo_openproject_white_big.png")
+    desktop_light_high_contrast = if OpenProject::Configuration.bim?
+                                    asset_path("bim/logo_openproject_bim_big_coloured.png")
+                                  else
+                                    asset_path(I18n.locale == :ru ? "logo-black-bg-ua.png" : "logo_openproject.png")
+                                  end
+    mobile_white = asset_path("icon_logo_white.svg")
+
+    {
+      desktop: {
+        light: desktop_light,
+        light_high_contrast: desktop_light_high_contrast,
+        dark: desktop_light
+      },
+      mobile: {
+        light: asset_path("icon_logo.svg"),
+        white: mobile_white,
+        light_high_contrast: asset_path("icon_logo.svg"),
+        dark: mobile_white
+      }
+    }
+  end
+
+  def logo_urls_with_custom_style(custom_style, defaults)
+    desktop, mobile = custom_logo_urls(custom_style).fetch_values(:desktop, :mobile)
+    theme_logo = locale_aware_theme_logo(custom_style)
+
+    desktop = desktop_fallback_to_mobile(custom_style, desktop, mobile)
+
+    {
+      desktop: defaults[:desktop].merge({ light: theme_logo, dark: theme_logo }.compact).merge(desktop.compact),
+      mobile: defaults[:mobile].merge(mobile.compact).merge(white: mobile[:light] || defaults.dig(:mobile, :white))
+    }
+  end
+
+  def desktop_fallback_to_mobile(custom_style, desktop, mobile)
+    desktop_fields = CustomStyle::LOGO_FIELDS.fetch(:desktop)
+    mobile_fields = CustomStyle::LOGO_FIELDS.fetch(:mobile)
+
+    desktop.to_h do |mode, url|
+      desktop_logo_present = custom_style.public_send(desktop_fields.fetch(mode)).present?
+      mobile_logo_present = custom_style.public_send(mobile_fields.fetch(mode)).present?
+
+      [mode, !desktop_logo_present && (mobile_logo_present || url.nil?) ? mobile[mode] : url]
+    end
+  end
+
+  def locale_aware_theme_logo(custom_style)
+    return if custom_style.theme_logo.blank?
+
+    logo = custom_style.theme_logo
+    logo = "logo-black-bg-ua.png" if I18n.locale == :ru && logo == "logo_openproject.png"
+
+    asset_path(logo)
+  end
+
+  def custom_logo_upload(custom_style, mode:, field:)
+    attachment = custom_style.public_send(field)
+    present = custom_style.persisted? && attachment.present?
+
+    {
+      field:,
+      label: t("admin.custom_styles.branding.modes.#{mode}.name"),
+      present:,
+      source: present ? custom_logo_url(custom_style, attachment) : nil,
+      img_class: field.to_s.start_with?("logo_mobile") ? "custom-logo-mobile-preview" : "custom-logo-preview",
+      accept: "image/*",
+      delete_path: custom_style_logo_delete_path(field:),
+      instructions: t("admin.custom_styles.branding.modes.#{mode}.description")
+    }
+  end
+end

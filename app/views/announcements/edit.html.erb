@@ -1,0 +1,43 @@
+<% html_title t(:label_administration), t(:label_announcement) %>
+
+<%=
+  render(Primer::OpenProject::PageHeader.new) do |header|
+    header.with_title { "#{t(:label_announcement)} (#{notice_annoucement_active})" }
+    header.with_breadcrumbs(
+      [{ href: admin_index_path, text: t(:label_administration) },
+       t(:label_announcement)]
+    )
+  end
+%>
+
+<%=
+  settings_primer_form_with(model: @announcement, url: announcements_path, method: :patch) do |f|
+    render_inline_settings_form(f) do |form|
+      form.rich_text_area(
+        name: :text,
+        label: I18n.t("announcements.content"),
+        value: @announcement.text,
+        disabled: false,
+        rich_text_options: {
+          showAttachments: false
+        }
+      )
+
+      form.single_date_picker(
+        name: :show_until,
+        label: I18n.t("announcements.show_until"),
+        input_width: :small,
+        leading_visual: { icon: :calendar }
+      )
+
+      form.check_box(
+        name: :active,
+        label: I18n.t(:label_active),
+        checked: @announcement.active,
+        disabled: false
+      )
+
+      form.submit
+    end
+  end
+%>

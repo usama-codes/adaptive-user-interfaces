@@ -1,0 +1,230 @@
+//-- copyright
+// OpenProject is an open source project management software.
+// Copyright (C) the OpenProject GmbH
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License version 3.
+//
+// OpenProject is a fork of ChiliProject, which is a fork of Redmine. The copyright follows:
+// Copyright (C) 2006-2013 Jean-Philippe Lang
+// Copyright (C) 2010-2013 the ChiliProject Team
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License
+// as published by the Free Software Foundation; either version 2
+// of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program. If not, see <https://www.gnu.org/licenses/>.
+//
+// See COPYRIGHT and LICENSE files for more details.
+//++
+
+$advanced-filters--label-size: 20%
+$advanced-filters--operator-size: 20%
+$advanced-filters--values-size: 25%
+$advanced-filters--values-and-operator-size: 45%
+$advanced-filters--close-icon-size: 50px
+$advanced-filters--grid-gap: 10px
+// Primer exposes its form control widths only as classes capping the inner field wrap, so these
+// have to be literals. The operator column fits the widest operator label ("more than days ago"
+// needs 158px including the select's arrow reserve); Primer's scale jumps 144px -> 256px.
+$advanced-filters--operator-column-width: 160px
+$advanced-filters--value-min-width: 256px
+
+.advanced-filters--container
+  @extend %filters--container
+  padding: 1rem
+  max-height: 50vh
+  overflow-y: auto
+  position: relative
+  margin: 0 0 10px 0
+
+  &.collapsed
+    display: none
+
+  .advanced-filters--close
+    position: absolute
+    top: var(--stack-padding-condensed)
+    right: var(--stack-padding-condensed)
+    z-index: 2
+
+.advanced-filters--filters
+  list-style-type: none
+  margin: var(--base-size-32) 0 0 0
+
+  > .advanced-filters--filter
+    display: grid
+    // Filters will not span the whole width,
+    // but have an orientation to the left side
+    grid-template-columns: $advanced-filters--label-size $advanced-filters--operator-size $advanced-filters--values-size $advanced-filters--close-icon-size
+    grid-gap: $advanced-filters--grid-gap
+    align-items: center
+    margin-bottom: 10px
+
+    &.--without-operator
+      grid-template-columns: $advanced-filters--label-size calc(#{$advanced-filters--values-and-operator-size} + #{$advanced-filters--grid-gap}) $advanced-filters--close-icon-size
+
+  .advanced-filters--filter-name,
+  .advanced-filters--add-filter-label
+    @include text-shortener
+    margin: auto 0
+
+  .advanced-filters--filter-value,
+  .advanced-filters--filter-operator
+    .advanced-filters--select,
+    .advanced-filters--number-field
+      @include form--input-field-mixin--small
+      @include form--input-field-mixin--narrow
+      flex: 0 0 auto
+
+.advanced-filters--add-filter
+  display: grid
+  grid-template-columns: $advanced-filters--label-size calc(#{$advanced-filters--values-and-operator-size} + #{$advanced-filters--grid-gap}) $advanced-filters--close-icon-size
+  grid-gap: $advanced-filters--grid-gap
+
+// The type="text" is required to be more specific
+.advanced-filters--text-field[type="text"],
+.advanced-filters--date-field[type="text"]
+  @extend .form--text-field
+
+  &:required
+    box-shadow: none
+
+.advanced-filters--select
+  @extend .form--select
+
+.advanced-filters--ng-select
+  width: 100%
+
+.advanced-filters--affix
+  @extend .form--field-affix
+  @include form--field-affix-mixin--transparent
+  font-size: 0.9rem
+
+.advanced-filters--tooltip-trigger[data-tooltip]
+  @extend .advanced-filters--affix, .tooltip--right
+
+.advanced-filters--filter-value:has(.advanced-filters--tooltip-trigger)
+  overflow: visible
+
+.advanced-filters--remove-filter
+  text-align: right
+
+  a
+    display: block
+
+    &:hover
+      text-decoration: none
+
+.advanced-filters--remove-filter-icon
+  @extend .icon-close, .icon4
+
+.advanced-filters--add-filter-label-icon
+  @extend .icon-add, .icon4
+
+.advanced-filters--add-filter-info
+  @include grid-content()
+  @include grid-visible-overflow
+  padding: 1rem 0 0 0
+
+.advanced-filters--spacer
+  border-top: 1px solid $filters--border-color
+  height: 1px
+  margin: 0.75rem 0
+
+
+.op-filters-form
+  // Caps the inputs so they stay readable when the box spans a full width page region. The
+  // box itself always follows its container; only the inputs inside it are capped.
+  --op-filters-form-content-max-width: 752px
+  display: none
+  margin-top: 1rem
+  position: relative
+
+  &.-expanded
+    display: block
+
+  &--with-footer
+    padding-top: 0
+
+  &--full-width
+    --op-filters-form-content-max-width: none
+
+  .advanced-filters--actions
+    display: flex
+    justify-content: flex-end
+    align-items: center
+    gap: var(--base-size-8)
+    margin-top: var(--base-size-16)
+
+  .FormControl-horizontalGroup.advanced-filters--filter
+    align-items: center
+    flex-wrap: wrap
+    gap: $advanced-filters--grid-gap
+    max-width: var(--op-filters-form-content-max-width)
+
+    > .advanced-filters--filter-name
+      flex: 0 0 100%
+      text-align: left
+      overflow: hidden
+      text-overflow: ellipsis
+      white-space: nowrap
+
+    > .FormControl
+      flex: 1 1 $advanced-filters--value-min-width
+      min-width: 0
+
+    > .FormControl:has([data-filter--filters-form-target="operator"])
+      flex: 0 0 $advanced-filters--operator-column-width
+
+    > .advanced-filters--remove-filter
+      margin-left: auto
+      flex-shrink: 0
+
+  .FormControl:has([data-filter--filters-form-target="addFilterSelect"])
+    border-top: 1px solid var(--borderColor-muted)
+    margin-top: var(--base-size-8)
+    padding-top: var(--base-size-16)
+    max-width: var(--op-filters-form-content-max-width)
+
+  .advanced-filters--filter-value .FormControl-select-wrap
+    display: flex
+    align-items: center
+    gap: var(--base-size-4)
+
+    .FormControl-select
+      flex: 1 1 auto
+
+.work-packages-embedded-view--container .advanced-filters--container
+  margin: 0 0 1rem 0
+
+@media screen and (max-width: $breakpoint-sm)
+  .advanced-filters--filters
+    .advanced-filters--filter
+      grid-gap: 0 10px
+
+    .advanced-filters--filter-name,
+    .advanced-filters--add-filter-label,
+    .advanced-filters--add-filter-value
+      // Span over entire width
+      grid-column: 1 / -1
+
+    .advanced-filters--remove-filter
+      // Align at the end of the container
+      grid-column: -1
+
+    .advanced-filters--filter-operator,
+    .advanced-filters--filter-value
+      grid-column: span 2
+      order: 2
+
+      .advanced-filters--text-field,
+      .advanced-filters--select,
+      .advanced-filters--number-field
+        width: 100%
