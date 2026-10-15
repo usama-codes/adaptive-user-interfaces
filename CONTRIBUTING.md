@@ -1,145 +1,101 @@
-# Develop OpenProject
+# Contributing
 
-We are pleased that you are thinking about contributing to OpenProject! This guide details how to contribute to OpenProject in a way that is efficient and fun for everyone.
+## Branch Structure
 
-## Get in touch
+main        → sprint-reviewed, stable code only. Never pushed to directly.
+develop     → active sprint work. All feature branches merge here.
+feature/*   → one branch per task, branched from develop, deleted after merge.
 
-Please get in touch with us using our [OpenProject community platform](https://community.openproject.org/) or send us an email to [info@openproject.com](mailto:info@openproject.com).
+## Branch Naming
 
-## Issue tracking and coordination
+feature/<task-id>-short-description
 
-We eat our own ice cream so we use OpenProject for roadmap planning and team collaboration. Please have a look at the following pages:
+Examples:
+  feature/T1.1-fastapi-init
+  feature/T1.3-openproject-client
+  feature/T2.4-gemini-function-calling
 
-- [Product roadmap](https://community.openproject.org/projects/openproject/roadmap)
-- [Wish list](https://community.openproject.org/projects/openproject/work_packages?query_id=180)
-- [Report a bug](https://www.openproject.org/docs/development/report-a-bug/)
-- [Submit a feature idea](https://www.openproject.org/docs/development/submit-feature-idea/)
+## Starting a Task
 
+git checkout develop
+git pull origin develop
+git checkout -b feature/T1.x-your-task
 
-## Branching model
+## Submitting Work
 
-The main development branch for upcoming releases is `dev`.
-If in doubt, create your pull request against `dev`.
-All new features, gem updates and bugfixes for the upcoming release should go into the `dev` branch.
+1. Push your feature branch to origin.
+2. Open a PR into develop (not main).
+3. PR title: [T1.x] Short description of what was built.
+4. PR description must include:
+   - What was built (2–3 sentences)
+   - How to test it locally (exact commands)
+   - Screenshot or terminal output proving it works
+   - Checklist of the task's Definition of Done items, each checked
+5. At least one other team member must approve before merge.
+6. CI must pass (lint + type check + tests) before merge.
+7. Delete the feature branch after merge.
 
+## PR into main
 
-## Development flow
+Only at sprint review. One PR: develop → main.
+PR title: Sprint <N> — <sprint goal one-liner>.
+All three members must approve.
 
-For contributing source code, please follow the git workflow below:
+## Commit Messages
 
-- **Fork** OpenProject on GitHub
-- Clone your fork to your development machine:
+Format: <type>: <short description>
 
-```bash
-git clone git@github.com/<username>/openproject
-```
+Types: feat | fix | test | docs | chore | refactor
 
-- Optional: Add the original OpenProject repository as a remote, so you can fetch changes:
+Examples:
+  feat: add OpenProject authenticated HTTP client
+  test: add unit tests for session TTL expiry
+  docs: update CONTRACTS.md with Intent JSON schema v2
+  chore: add ruff to pre-commit config
 
-```bash
-git remote add upstream git@github.com:opf/openproject
-```
+One logical change per commit. Do not bundle unrelated changes.
 
-- Make sure you're on the right branch. The main development branch is `dev`:
+## Code Style
 
-```bash
-git checkout dev
-```
+Formatter : black (line length 88)
+Import sort: isort
+Linter     : ruff (rules E, F, I)
 
-- Create a feature branch:
+All three are enforced by pre-commit hooks. Run pre-commit install
+once after cloning. Hooks run automatically on every commit and
+fix or flag violations before the commit is finalized.
 
-```bash
-git checkout -b feature/<short description of your feature>
-```
+To run manually:
+  pre-commit run --all-files
 
-- Make your changes, then push the branch into your ***own*** repository:
+## Running Tests
 
-```bash
-git push origin <your feature branch>
-```
+pytest                        # run all tests
+pytest tests/unit/            # unit tests only
+pytest tests/integration/     # integration tests only
+pytest -k "test_session"      # run tests matching a name pattern
 
-- Create a pull request against a branch of of the <opf/openproject> repository, containing a ***clear description*** of what the pull request attempts to change and/or fix.
+All tests must pass locally before opening a PR.
 
-If your pull request **does not contain a description** for what it does and what its intentions are,
-we will reject it.
-If you are working on a specific work package from the [list](https://community.openproject.org/projects/openproject/work_packages),
-you may include a link to that work package in the description, so we can track your work.
+## Environment Setup
 
-The core contributor team will then review your pull request according to our [code review guideline](https://www.openproject.org/open-source/development-free-project-management-software/code-review-guideliness/).
-Please note that you can add commits after the pull request has been created by pushing
-to the branch in your fork.
+1. Clone the repo.
+2. Create a virtual environment: python -m venv .venv
+3. Activate it: source .venv/bin/activate  (Windows: .venv\Scripts\activate)
+4. Install dependencies: pip install -r requirements.txt
+5. Copy .env.example to .env and fill in all values.
+6. Run pre-commit install.
+7. Start the server: uvicorn main:app --reload
+8. Verify: GET http://localhost:8000/health returns {"status": "ok"}
 
-## Translations
+Refer to ENVIRONMENT_NOTES.md for known issues on specific machines.
 
-If you want to contribute to the localization of OpenProject and its
-plugins you can do so on [Crowdin](https://crowdin.com/projects/opf).
-Once a day we fetch those locales and upload them to GitHub.
+## Interface Changes
 
-More on this topic can be found in our [blog post](https://www.openproject.org/help-translate-openproject-into-your-language/).
+If your task changes a contract between components (request/response
+shape, function signature, config key name), you must update
+CONTRACTS.md in the same PR. Do not merge interface changes without
+updating the contract document.
 
-
-## Testing
-
-Please add tests to your code to verify functionality, especially if it is a new feature.
-
-Pull requests will be verified by GitHub Actions,
-but please run them locally as well and make sure they are green before creating your pull request.
-We have a lot of pull requests coming in and it takes some time to run the complete suite for each one.
-
-Please also use `[ci skip]` in your commit message to suppress builds which are not necessary
-(e.g. after fixing a typo in the `README`).
-
-
-## Bugs and hotfixes
-
-Bugfixes for one of the actively supported versions of OpenProject should be issued against the respective branch.
-A fix for the current version (called "Hotfix" and the branch ideally being named `hotfix/XYZ`)
-should target `release/*` and a fix for the former version
-(called "Backport" and the branch ideally being named `backport/XYZ`)
-should target `backport/*`. We will try to merge hotfixes into dev branch
-but if that is a non-trivial task, we might ask you to create another PR for that.
-
-## Inactive pull requests
-
-We want to keep the Pull request list as tidy as possible - we will aim close pull requests
-after an **inactivity period of 30 days** (no comments, no further pushes)
-which are not labelled as `work in progress` by us.
-
-## Security
-
-If you notice a security issue in OpenProject, please send us a gpg encrypted email to security@openproject.com and describe the issue you found. [Download OpenProject security team public gpg key](https://keys.openpgp.org/vks/v1/by-fingerprint/BDCFE01EDE84EA199AE172CE7D669C6D47533958).
-
-Please include a description on how to reproduce the issue if possible. Our security team will get your email and will attempt to reproduce and fix the issue as soon as possible.
-
-## Contributor code of conduct
-
-As contributors and maintainers of this project, we pledge to respect all people
-who contribute through reporting issues, posting feature requests,
-updating documentation, submitting pull requests or patches, and other activities.
-
-We are committed to making participation in this project a harassment-free experience for everyone,
-regardless of level of experience, gender, gender identity and expression, sexual orientation,
-disability, personal appearance, body size, race, age, or religion.
-
-Examples of unacceptable behavior by participants include the use of sexual language
-or imagery, derogatory comments or personal attacks, trolling, public or private harassment,
-insults, or other unprofessional conduct.
-
-Project maintainers have the right and responsibility to remove, edit, or reject comments, commits,
-code, wiki edits, issues, and other contributions that are not aligned to this Code of Conduct.
-Project maintainers who do not follow the Code of Conduct may be removed from the project team.
-
-Instances of abusive, harassing, or otherwise unacceptable behavior may be reported
-by opening an issue or contacting one or more of the project maintainers.
-
-This code of conduct is adapted from the
-[Contributor Covenant](https://www.contributor-covenant.org),
-version 1.0.0, available at
-[http://contributor-covenant.org/version/1/0/0/](https://www.contributor-covenant.org/version/1/0/0/code-of-conduct/)
-
-## Contributors license agreement
-
-If you want to contribute to OpenProject, please make sure to accept our Contributor License Agreement (CLA). The CLA documents the rights granted by contributors to OpenProject.
-The [CLA can be found here](https://www.openproject.org/legal/contributor-license-agreement/).
-
-A GitHub action will enforce the CLA has been read and accepted by every new contributor. You will only be asked once, the document is short, and signing is easy.
+If your task involves a significant architectural decision, add an
+ADR to docs/adr/ following the existing template before merging.
