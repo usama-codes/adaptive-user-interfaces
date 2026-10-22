@@ -123,6 +123,9 @@ db/*.sql
 
 # Local development docker
 /.env
+/adaptive_ui_service/.env
+/__pycache__/
+/.pytest_cache/
 /docker-compose.override.yml
 
 # Local development direnv files
