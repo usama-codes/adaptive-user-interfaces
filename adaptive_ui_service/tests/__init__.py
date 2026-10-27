@@ -1,0 +1,1 @@
+"""Adaptive UI service tests."""

@@ -3,6 +3,7 @@
 ![GitHub commit activity](https://img.shields.io/github/commit-activity/m/opf/openproject)
 ![GitHub branch checks state](https://img.shields.io/github/checks-status/opf/openproject/dev)
 [![Github Tests](https://github.com/opf/openproject/actions/workflows/test-core.yml/badge.svg?branch=dev)](https://github.com/opf/openproject/actions/workflows/test-core.yml)
+[![Python CI](https://github.com/adaptive-software-interfaces/openproject/actions/workflows/ci.yml/badge.svg?branch=develop)](https://github.com/adaptive-software-interfaces/openproject/actions/workflows/ci.yml)
 
 **We empower teams to achieve great things together for the good of society.**
 
