@@ -1,9 +1,10 @@
 # OpenProject
+
 ![GitHub release (latest by date)](https://img.shields.io/github/v/release/opf/openproject)
 ![GitHub commit activity](https://img.shields.io/github/commit-activity/m/opf/openproject)
 ![GitHub branch checks state](https://img.shields.io/github/checks-status/opf/openproject/dev)
 [![Github Tests](https://github.com/opf/openproject/actions/workflows/test-core.yml/badge.svg?branch=dev)](https://github.com/opf/openproject/actions/workflows/test-core.yml)
-[![Python CI](https://github.com/adaptive-software-interfaces/openproject/actions/workflows/ci.yml/badge.svg?branch=develop)](https://github.com/adaptive-software-interfaces/openproject/actions/workflows/ci.yml)
+[![Python CI](https://github.com/adaptive-software-interfaces/openproject/actions/workflows/ci.yml/badge.svg?branch=develop)](https://github.com/usama-codes/adaptive-user-interfaces/actions/workflows/ci.yml)
 
 **We empower teams to achieve great things together for the good of society.**
 
@@ -16,16 +17,16 @@ OpenProject is trusted by organizations worldwide, including enterprises, public
 
 **OpenProject's key features include:**
 
-* [Project and portfolio management](https://www.openproject.org/collaboration-software-features/project-portfolio-management/)
-* [Agile boards, Kanban, Scrum, SAFe](https://www.openproject.org/collaboration-software-features/agile-project-management/)
-* [Project planning and scheduling with Gantt charts](https://www.openproject.org/collaboration-software-features/project-planning-scheduling/)
-* [Product and release planning](https://www.openproject.org/collaboration-software-features/product-development/)
-* [Task management and team collaboration](https://www.openproject.org/collaboration-software-features/task-management/)
-* [Time tracking, cost reporting, and budgeting](https://www.openproject.org/collaboration-software-features/time-tracking/)
-* [Bug tracking](https://www.openproject.org/collaboration-software-features/#bug-tracking)
-* [Team collaboration, wikis, forums, news](https://www.openproject.org/collaboration-software-features/team-collaboration/)
-* [Meeting agendas and meeting minutes](https://www.openproject.org/collaboration-software-features/meeting-management/)
-* [Integrations: Nextcloud, XWiki, GitHub, GitLab, and more](https://www.openproject.org/integrations/)
+- [Project and portfolio management](https://www.openproject.org/collaboration-software-features/project-portfolio-management/)
+- [Agile boards, Kanban, Scrum, SAFe](https://www.openproject.org/collaboration-software-features/agile-project-management/)
+- [Project planning and scheduling with Gantt charts](https://www.openproject.org/collaboration-software-features/project-planning-scheduling/)
+- [Product and release planning](https://www.openproject.org/collaboration-software-features/product-development/)
+- [Task management and team collaboration](https://www.openproject.org/collaboration-software-features/task-management/)
+- [Time tracking, cost reporting, and budgeting](https://www.openproject.org/collaboration-software-features/time-tracking/)
+- [Bug tracking](https://www.openproject.org/collaboration-software-features/#bug-tracking)
+- [Team collaboration, wikis, forums, news](https://www.openproject.org/collaboration-software-features/team-collaboration/)
+- [Meeting agendas and meeting minutes](https://www.openproject.org/collaboration-software-features/meeting-management/)
+- [Integrations: Nextcloud, XWiki, GitHub, GitLab, and more](https://www.openproject.org/integrations/)
 
 More information can be found on our [website](https://www.openproject.org).
 
@@ -50,7 +51,6 @@ We are always looking for new members to our Community, so if you are interested
 Working on OpenProject comes with the satisfaction of working on a widely used open source application.
 
 Also, if you do not want to be limited to working on open source in your free time, OpenProject GmbH, the company contributing to the OpenProject development, [is hiring](https://www.openproject.org/career/).
-
 
 ## Stay in contact
 
