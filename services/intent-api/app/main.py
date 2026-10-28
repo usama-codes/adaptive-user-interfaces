@@ -1,4 +1,5 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 from app.routes.intent import router as intent_router
@@ -23,4 +24,21 @@ async def handle_http_exception(_request, exception: HTTPException) -> JSONRespo
         status_code=exception.status_code,
         content=content,
         headers=exception.headers,
+    )
+
+
+@app.exception_handler(RequestValidationError)
+async def handle_validation_exception(
+    _request: Request,
+    exception: RequestValidationError,
+) -> JSONResponse:
+    return JSONResponse(
+        status_code=422,
+        content={
+            "error": {
+                "code": "VALIDATION_ERROR",
+                "message": "Request validation failed",
+                "details": exception.errors(),
+            }
+        },
     )
