@@ -1,3 +1,4 @@
+import asyncio
 import json
 from dataclasses import dataclass
 
@@ -9,6 +10,13 @@ class Membership:
     project_id: int
     project_name: str
     role_ids: list[int]
+
+
+@dataclass
+class PermissionSet:
+    user_id: int
+    project_id: int
+    permissions: list[str]
 
 
 def _extract_project_id(href: str) -> int:
@@ -44,3 +52,46 @@ async def get_user_memberships(
         )
 
     return memberships
+
+
+async def get_role_permissions(role_id: int, client: OpenProjectClient) -> list[str]:
+    data = await client.get(f"/api/v3/roles/{role_id}")
+    return data.get("permissions", [])
+
+
+async def get_user_permissions(
+    user_id: int, project_id: int, client: OpenProjectClient
+) -> PermissionSet:
+    memberships = await get_user_memberships(user_id, client)
+    project_membership = next(
+        (
+            membership
+            for membership in memberships
+            if membership.project_id == project_id
+        ),
+        None,
+    )
+
+    if project_membership is None:
+        return PermissionSet(user_id=user_id, project_id=project_id, permissions=[])
+
+    role_permissions_lists = await asyncio.gather(
+        *[
+            get_role_permissions(role_id, client)
+            for role_id in project_membership.role_ids
+        ]
+    )
+
+    seen: set[str] = set()
+    permissions: list[str] = []
+    for role_permissions in role_permissions_lists:
+        for permission in role_permissions:
+            if permission not in seen:
+                seen.add(permission)
+                permissions.append(permission)
+
+    return PermissionSet(
+        user_id=user_id,
+        project_id=project_id,
+        permissions=permissions,
+    )
