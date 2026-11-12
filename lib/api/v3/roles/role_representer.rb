@@ -35,6 +35,7 @@ module API
         # TODO: This is only a stub
         property :id, render_nil: true
         property :name
+        property :permissions
 
         def _type
           "Role"
