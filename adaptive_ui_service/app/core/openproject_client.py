@@ -31,6 +31,8 @@ class OpenProjectClient:
         return await self._request("POST", path, json=body)
 
     async def _request(self, method: str, path: str, **kwargs: object) -> dict:
+        last_exception: exceptions.OpenProjectAPIError | None = None
+
         for attempt in range(self._max_retries + 1):
             try:
                 response = await self._client.request(method, path, **kwargs)
@@ -47,13 +49,14 @@ class OpenProjectClient:
                 )
 
             if response.status_code >= 500:
-                if attempt < self._max_retries:
-                    await asyncio.sleep(2**attempt)
-                    continue
-                raise exceptions.OpenProjectAPIError(
+                last_exception = exceptions.OpenProjectAPIError(
                     status_code=response.status_code,
                     response_body=response.text,
                 )
+                if attempt < self._max_retries:
+                    await asyncio.sleep(2**attempt)
+                    continue
+                raise last_exception
 
             if response.status_code >= 400:
                 raise exceptions.OpenProjectAPIError(
@@ -63,7 +66,7 @@ class OpenProjectClient:
 
             return response.json()
 
-        raise AssertionError("Request retry loop exited unexpectedly")
+        raise last_exception
 
     async def close(self) -> None:
         await self._client.aclose()
