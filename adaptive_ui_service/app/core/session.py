@@ -5,7 +5,6 @@ from datetime import datetime, timedelta, timezone
 from threading import Lock
 from uuid import uuid4
 
-
 SESSION_TTL = timedelta(minutes=30)
 
 

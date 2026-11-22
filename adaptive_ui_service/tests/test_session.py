@@ -4,10 +4,7 @@ from fastapi import Depends, FastAPI
 from fastapi.testclient import TestClient
 
 from adaptive_ui_service.app.core import session as session_module
-from adaptive_ui_service.app.core.session import (
-    SessionStore,
-    get_session_store,
-)
+from adaptive_ui_service.app.core.session import SessionStore, get_session_store
 
 
 def test_create_and_get_session() -> None:
