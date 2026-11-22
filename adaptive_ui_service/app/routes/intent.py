@@ -4,16 +4,11 @@ from pathlib import Path
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, ConfigDict, Field
 
-from adaptive_ui_service.app.core.session import (
-    SessionStore,
-    get_session_store,
-)
+from adaptive_ui_service.app.core.session import SessionStore, get_session_store
 
 router = APIRouter()
 
-SCHEMA_PATH = (
-    Path(__file__).resolve().parents[2] / "schemas" / "intent.json"
-)
+SCHEMA_PATH = Path(__file__).resolve().parents[2] / "schemas" / "intent.json"
 
 
 class IntentRequest(BaseModel):

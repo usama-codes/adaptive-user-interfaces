@@ -1,10 +1,7 @@
 import pytest
 from fastapi.testclient import TestClient
 
-from adaptive_ui_service.app.core.session import (
-    SessionStore,
-    get_session_store,
-)
+from adaptive_ui_service.app.core.session import SessionStore, get_session_store
 from adaptive_ui_service.app.main import app
 
 
