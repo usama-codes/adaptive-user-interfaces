@@ -52,7 +52,7 @@ async def test_server_error_retries_then_raises() -> None:
     finally:
         await client.close()
 
-    assert error.value.status_code == 500
+    assert error.value.upstream_status_code == 500
     assert route.call_count == 3
 
 
@@ -70,4 +70,4 @@ async def test_timeout_raises_openproject_api_error() -> None:
     finally:
         await client.close()
 
-    assert error.value.status_code == 0
+    assert error.value.upstream_status_code == 0

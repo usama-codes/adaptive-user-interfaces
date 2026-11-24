@@ -145,4 +145,4 @@ async def test_api_error_propagation() -> None:
     finally:
         await client.close()
 
-    assert error.value.status_code == 500
+    assert error.value.upstream_status_code == 500
