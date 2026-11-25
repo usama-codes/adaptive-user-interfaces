@@ -40,7 +40,7 @@ class OpenProjectClient:
                 raise exceptions.OpenProjectAPIError(
                     status_code=0,
                     response_body="",
-                    message=f"Request to {path} timed out after {self._timeout}s",
+                    message="OpenProject API request timed out",
                 ) from exc
 
             if response.status_code == 401:
