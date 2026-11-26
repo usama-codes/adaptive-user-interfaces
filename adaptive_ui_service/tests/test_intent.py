@@ -94,9 +94,16 @@ def test_unknown_session_returns_401(client_and_store) -> None:
 
 
 def test_schema_file_is_loaded() -> None:
-    from adaptive_ui_service.app.routes.intent import load_intent_schema
+    from adaptive_ui_service.app.services import normalization_service
 
-    schema = load_intent_schema()
+    schema = normalization_service.load_intent_schema()
 
-    assert schema["title"] == "IntentRequest"
-    assert schema["properties"]["raw_text"]["maxLength"] == 2000
+    assert schema["title"] == "Intent"
+    assert schema["properties"]["action"]["enum"] == [
+        "move",
+        "hide",
+        "show",
+        "reorder",
+        "unsupported",
+        "clarify",
+    ]

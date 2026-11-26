@@ -11,6 +11,10 @@ class Settings(BaseSettings):
     port: int = 8000
     openproject_url: str = "http://localhost:3000"
     openproject_api_token: str = ""
+    gemini_api_key: str = ""
+    gemini_model: str = "gemini-2.5-flash"
+    gemini_base_url: str = "https://generativelanguage.googleapis.com/v1beta/openai"
+    gemini_timeout: float = 30.0
 
     model_config = SettingsConfigDict(
         env_file="adaptive_ui_service/.env",

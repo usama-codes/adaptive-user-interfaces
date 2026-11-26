@@ -1,18 +1,33 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "IntentRequest",
+  "title": "Intent",
   "type": "object",
   "additionalProperties": false,
-  "required": ["session_id", "raw_text"],
+  "required": [
+    "action",
+    "target_capability_id",
+    "destination",
+    "confidence",
+    "clarification_question"
+  ],
   "properties": {
-    "session_id": {
+    "action": {
       "type": "string",
-      "minLength": 1
+      "enum": ["move", "hide", "show", "reorder", "unsupported", "clarify"]
     },
-    "raw_text": {
-      "type": "string",
-      "minLength": 1,
-      "maxLength": 2000
+    "target_capability_id": {
+      "type": ["string", "null"]
+    },
+    "destination": {
+      "type": ["string", "null"]
+    },
+    "confidence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "clarification_question": {
+      "type": ["string", "null"]
     }
   }
 }

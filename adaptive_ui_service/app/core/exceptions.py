@@ -30,6 +30,12 @@ class IntentValidationError(APIError):
     default_message = "Intent validation failed"
 
 
+class NormalizationError(APIError):
+    status_code = 502
+    error_code = "NORMALIZATION_ERROR"
+    default_message = "Intent normalization failed"
+
+
 class OpenProjectAPIError(APIError):
     status_code = 502
     error_code = "OPENPROJECT_API_ERROR"
