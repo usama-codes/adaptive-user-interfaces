@@ -1,0 +1,323 @@
+{
+  "draft_format": "proposed_fast_path_ui_change_v1",
+  "notice": "These are proposed executor instructions, not native OpenProject API payloads.",
+  "drafts": [
+    {
+      "draft_id": "TC01",
+      "category": "time_chart",
+      "description": "Display a work-package graph as a line chart.",
+      "ui_change": {
+        "operation": "update_widget_options",
+        "target": {
+          "widget_identifier": "work_packages_graph"
+        },
+        "changes": {
+          "chartType": "line"
+        }
+      }
+    },
+    {
+      "draft_id": "TC02",
+      "category": "time_chart",
+      "description": "Display a work-package graph as a bar chart.",
+      "ui_change": {
+        "operation": "update_widget_options",
+        "target": {
+          "widget_identifier": "work_packages_graph"
+        },
+        "changes": {
+          "chartType": "bar"
+        }
+      }
+    },
+    {
+      "draft_id": "TC03",
+      "category": "time_chart",
+      "description": "Display a work-package graph as a horizontal bar chart.",
+      "ui_change": {
+        "operation": "update_widget_options",
+        "target": {
+          "widget_identifier": "work_packages_graph"
+        },
+        "changes": {
+          "chartType": "horizontalBar"
+        }
+      }
+    },
+    {
+      "draft_id": "TC04",
+      "category": "time_chart",
+      "description": "Show the timeline in the work-package query view.",
+      "ui_change": {
+        "operation": "update_query",
+        "target": {
+          "widget_identifier": "work_packages_table",
+          "query_ref": "widget.options.queryId"
+        },
+        "changes": {
+          "timelineVisible": true
+        }
+      }
+    },
+    {
+      "draft_id": "TC05",
+      "category": "time_chart",
+      "description": "Set the work-package timeline zoom level to months.",
+      "ui_change": {
+        "operation": "update_query",
+        "target": {
+          "widget_identifier": "work_packages_table",
+          "query_ref": "widget.options.queryId"
+        },
+        "changes": {
+          "timelineZoomLevel": "months"
+        }
+      }
+    },
+    {
+      "draft_id": "VT01",
+      "category": "view_toggle",
+      "description": "Display work packages in list representation.",
+      "ui_change": {
+        "operation": "update_query",
+        "target": {
+          "widget_identifier": "work_packages_table",
+          "query_ref": "widget.options.queryId"
+        },
+        "changes": {
+          "displayRepresentation": "list"
+        }
+      }
+    },
+    {
+      "draft_id": "VT02",
+      "category": "view_toggle",
+      "description": "Display work packages in card representation.",
+      "ui_change": {
+        "operation": "update_query",
+        "target": {
+          "widget_identifier": "work_packages_table",
+          "query_ref": "widget.options.queryId"
+        },
+        "changes": {
+          "displayRepresentation": "card"
+        }
+      }
+    },
+    {
+      "draft_id": "VT03",
+      "category": "view_toggle",
+      "description": "Enable hierarchy display in the work-package view.",
+      "ui_change": {
+        "operation": "update_query",
+        "target": {
+          "widget_identifier": "work_packages_table",
+          "query_ref": "widget.options.queryId"
+        },
+        "changes": {
+          "showHierarchies": true
+        }
+      }
+    },
+    {
+      "draft_id": "VT04",
+      "category": "view_toggle",
+      "description": "Disable hierarchy display in the work-package view.",
+      "ui_change": {
+        "operation": "update_query",
+        "target": {
+          "widget_identifier": "work_packages_table",
+          "query_ref": "widget.options.queryId"
+        },
+        "changes": {
+          "showHierarchies": false
+        }
+      }
+    },
+    {
+      "draft_id": "VT05",
+      "category": "view_toggle",
+      "description": "Show sums in the work-package table.",
+      "ui_change": {
+        "operation": "update_query",
+        "target": {
+          "widget_identifier": "work_packages_table",
+          "query_ref": "widget.options.queryId"
+        },
+        "changes": {
+          "sums": true
+        }
+      }
+    },
+    {
+      "draft_id": "CV01",
+      "category": "column_visibility",
+      "description": "Show subject, status, and assignee columns.",
+      "ui_change": {
+        "operation": "set_query_columns",
+        "target": {
+          "widget_identifier": "work_packages_table",
+          "query_ref": "widget.options.queryId"
+        },
+        "column_ids": [
+          "subject",
+          "status",
+          "assignedTo"
+        ]
+      }
+    },
+    {
+      "draft_id": "CV02",
+      "category": "column_visibility",
+      "description": "Show subject, priority, and due date columns.",
+      "ui_change": {
+        "operation": "set_query_columns",
+        "target": {
+          "widget_identifier": "work_packages_table",
+          "query_ref": "widget.options.queryId"
+        },
+        "column_ids": [
+          "subject",
+          "priority",
+          "dueDate"
+        ]
+      }
+    },
+    {
+      "draft_id": "CV03",
+      "category": "column_visibility",
+      "description": "Show subject, type, and status columns.",
+      "ui_change": {
+        "operation": "set_query_columns",
+        "target": {
+          "widget_identifier": "work_packages_table",
+          "query_ref": "widget.options.queryId"
+        },
+        "column_ids": [
+          "subject",
+          "type",
+          "status"
+        ]
+      }
+    },
+    {
+      "draft_id": "CV04",
+      "category": "column_visibility",
+      "description": "Show subject, author, and creation date columns.",
+      "ui_change": {
+        "operation": "set_query_columns",
+        "target": {
+          "widget_identifier": "work_packages_table",
+          "query_ref": "widget.options.queryId"
+        },
+        "column_ids": [
+          "subject",
+          "author",
+          "createdAt"
+        ]
+      }
+    },
+    {
+      "draft_id": "CV05",
+      "category": "column_visibility",
+      "description": "Show subject, start date, and due date columns.",
+      "ui_change": {
+        "operation": "set_query_columns",
+        "target": {
+          "widget_identifier": "work_packages_table",
+          "query_ref": "widget.options.queryId"
+        },
+        "column_ids": [
+          "subject",
+          "startDate",
+          "dueDate"
+        ]
+      }
+    },
+    {
+      "draft_id": "WP01",
+      "category": "widget_placement",
+      "description": "Place the work-package table in the first grid area.",
+      "ui_change": {
+        "operation": "move_widget",
+        "target": {
+          "widget_identifier": "work_packages_table"
+        },
+        "changes": {
+          "startRow": 0,
+          "endRow": 2,
+          "startColumn": 0,
+          "endColumn": 2
+        }
+      }
+    },
+    {
+      "draft_id": "WP02",
+      "category": "widget_placement",
+      "description": "Place the work-package graph beside the table.",
+      "ui_change": {
+        "operation": "move_widget",
+        "target": {
+          "widget_identifier": "work_packages_graph"
+        },
+        "changes": {
+          "startRow": 0,
+          "endRow": 2,
+          "startColumn": 2,
+          "endColumn": 4
+        }
+      }
+    },
+    {
+      "draft_id": "WP03",
+      "category": "widget_placement",
+      "description": "Place the calendar widget in the next grid row.",
+      "ui_change": {
+        "operation": "move_widget",
+        "target": {
+          "widget_identifier": "work_packages_calendar"
+        },
+        "changes": {
+          "startRow": 2,
+          "endRow": 4,
+          "startColumn": 0,
+          "endColumn": 2
+        }
+      }
+    },
+    {
+      "draft_id": "WP04",
+      "category": "widget_placement",
+      "description": "Place the time entries list in the right grid column.",
+      "ui_change": {
+        "operation": "move_widget",
+        "target": {
+          "widget_identifier": "time_entries_list"
+        },
+        "changes": {
+          "startRow": 2,
+          "endRow": 4,
+          "startColumn": 2,
+          "endColumn": 4
+        }
+      }
+    },
+    {
+      "draft_id": "WP05",
+      "category": "widget_placement",
+      "description": "Alternative layout: place the project description widget across the top row instead of placing the table and graph widgets there.",
+      "ui_change": {
+        "operation": "move_widget",
+        "target": {
+          "widget_identifier": "project_description"
+        },
+        "changes": {
+          "startRow": 0,
+          "endRow": 1,
+          "startColumn": 0,
+          "endColumn": 4
+        }
+      }
+    }
+  ]
+}

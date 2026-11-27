@@ -1,0 +1,441 @@
+[
+  {
+    "capability_id": "time_chart_show_hide",
+    "name": "Show or hide the work-over-time chart",
+    "description": "Toggle the visibility of the work-over-time chart on the project overview page.",
+    "category": "time_charts",
+    "required_permissions": [
+      "view_project",
+      "view_work_packages"
+    ],
+    "ui_change": {
+      "action": "toggle_visibility",
+      "target": "#time-chart-panel",
+      "value": true
+    }
+  },
+  {
+    "capability_id": "time_chart_hide",
+    "name": "Hide the work-over-time chart",
+    "description": "Hide the work-over-time chart from the project overview page.",
+    "category": "time_charts",
+    "required_permissions": [
+      "view_project",
+      "view_work_packages"
+    ],
+    "ui_change": {
+      "action": "toggle_visibility",
+      "target": "#time-chart-panel",
+      "value": false
+    }
+  },
+  {
+    "capability_id": "time_chart_group_by_week",
+    "name": "Group the work-over-time chart by week",
+    "description": "Display the work-over-time chart with weekly grouping.",
+    "category": "time_charts",
+    "required_permissions": [
+      "view_project",
+      "view_work_packages"
+    ],
+    "ui_change": {
+      "action": "set_grouping",
+      "target": "#time-chart-panel",
+      "value": "week"
+    }
+  },
+  {
+    "capability_id": "time_chart_group_by_month",
+    "name": "Group the work-over-time chart by month",
+    "description": "Display the work-over-time chart with monthly grouping.",
+    "category": "time_charts",
+    "required_permissions": [
+      "view_project",
+      "view_work_packages"
+    ],
+    "ui_change": {
+      "action": "set_grouping",
+      "target": "#time-chart-panel",
+      "value": "month"
+    }
+  },
+  {
+    "capability_id": "time_chart_set_date_range",
+    "name": "Set the work-over-time chart date range",
+    "description": "Limit the work-over-time chart to the last 30 days.",
+    "category": "time_charts",
+    "required_permissions": [
+      "view_project",
+      "view_work_packages"
+    ],
+    "ui_change": {
+      "action": "set_date_range",
+      "target": "#time-chart-panel",
+      "value": "last_30_days"
+    }
+  },
+  {
+    "capability_id": "view_switch_to_list",
+    "name": "Show work packages as a list",
+    "description": "Display work packages in the list representation.",
+    "category": "view_toggles",
+    "required_permissions": [
+      "view_work_packages"
+    ],
+    "ui_change": {
+      "action": "select_view",
+      "target": "work_packages",
+      "value": "list"
+    }
+  },
+  {
+    "capability_id": "view_switch_to_gantt",
+    "name": "Show work packages as a Gantt chart",
+    "description": "Display work packages in the Gantt representation.",
+    "category": "view_toggles",
+    "required_permissions": [
+      "view_work_packages"
+    ],
+    "ui_change": {
+      "action": "select_view",
+      "target": "work_packages",
+      "value": "gantt"
+    }
+  },
+  {
+    "capability_id": "view_switch_to_board",
+    "name": "Show work packages as a board",
+    "description": "Display work packages in the board representation.",
+    "category": "view_toggles",
+    "required_permissions": [
+      "view_work_packages"
+    ],
+    "ui_change": {
+      "action": "select_view",
+      "target": "work_packages",
+      "value": "board"
+    }
+  },
+  {
+    "capability_id": "view_switch_to_calendar",
+    "name": "Show work packages as a calendar",
+    "description": "Display work packages in the calendar representation.",
+    "category": "view_toggles",
+    "required_permissions": [
+      "view_work_packages"
+    ],
+    "ui_change": {
+      "action": "select_view",
+      "target": "work_packages",
+      "value": "calendar"
+    }
+  },
+  {
+    "capability_id": "view_toggle_grouping_row",
+    "name": "Show or hide the work-package grouping row",
+    "description": "Toggle the grouping row in the work-package view.",
+    "category": "view_toggles",
+    "required_permissions": [
+      "view_work_packages"
+    ],
+    "ui_change": {
+      "action": "toggle_grouping_row",
+      "target": "work_packages",
+      "value": true
+    }
+  },
+  {
+    "capability_id": "view_expand_all_hierarchies",
+    "name": "Expand all work-package hierarchies",
+    "description": "Expand all parent and child work-package rows in the current view.",
+    "category": "view_toggles",
+    "required_permissions": [
+      "view_work_packages"
+    ],
+    "ui_change": {
+      "action": "expand_all",
+      "target": "work_packages"
+    }
+  },
+  {
+    "capability_id": "view_collapse_all_hierarchies",
+    "name": "Collapse all work-package hierarchies",
+    "description": "Collapse all parent and child work-package rows in the current view.",
+    "category": "view_toggles",
+    "required_permissions": [
+      "view_work_packages"
+    ],
+    "ui_change": {
+      "action": "collapse_all",
+      "target": "work_packages"
+    }
+  },
+  {
+    "capability_id": "column_toggle_status",
+    "name": "Show the Status column",
+    "description": "Show the Status column in the work-package list.",
+    "category": "column_visibility",
+    "required_permissions": [
+      "view_work_packages"
+    ],
+    "ui_change": {
+      "action": "set_column_visibility",
+      "target": "status",
+      "value": true
+    }
+  },
+  {
+    "capability_id": "column_toggle_assignee",
+    "name": "Show the Assignee column",
+    "description": "Show the Assignee column in the work-package list.",
+    "category": "column_visibility",
+    "required_permissions": [
+      "view_work_packages"
+    ],
+    "ui_change": {
+      "action": "set_column_visibility",
+      "target": "assignedTo",
+      "value": true
+    }
+  },
+  {
+    "capability_id": "column_toggle_due_date",
+    "name": "Show the Due Date column",
+    "description": "Show the Due Date column in the work-package list.",
+    "category": "column_visibility",
+    "required_permissions": [
+      "view_work_packages"
+    ],
+    "ui_change": {
+      "action": "set_column_visibility",
+      "target": "dueDate",
+      "value": true
+    }
+  },
+  {
+    "capability_id": "column_toggle_priority",
+    "name": "Show the Priority column",
+    "description": "Show the Priority column in the work-package list.",
+    "category": "column_visibility",
+    "required_permissions": [
+      "view_work_packages"
+    ],
+    "ui_change": {
+      "action": "set_column_visibility",
+      "target": "priority",
+      "value": true
+    }
+  },
+  {
+    "capability_id": "column_toggle_story_points",
+    "name": "Show the Story Points column",
+    "description": "Show the Story Points column in the work-package list.",
+    "category": "column_visibility",
+    "required_permissions": [
+      "view_work_packages"
+    ],
+    "ui_change": {
+      "action": "set_column_visibility",
+      "target": "storyPoints",
+      "value": true
+    }
+  },
+  {
+    "capability_id": "column_hide_status",
+    "name": "Hide the Status column",
+    "description": "Hide the Status column in the work-package list.",
+    "category": "column_visibility",
+    "required_permissions": [
+      "view_work_packages"
+    ],
+    "ui_change": {
+      "action": "set_column_visibility",
+      "target": "status",
+      "value": false
+    }
+  },
+  {
+    "capability_id": "column_hide_assignee",
+    "name": "Hide the Assignee column",
+    "description": "Hide the Assignee column in the work-package list.",
+    "category": "column_visibility",
+    "required_permissions": [
+      "view_work_packages"
+    ],
+    "ui_change": {
+      "action": "set_column_visibility",
+      "target": "assignedTo",
+      "value": false
+    }
+  },
+  {
+    "capability_id": "column_hide_due_date",
+    "name": "Hide the Due Date column",
+    "description": "Hide the Due Date column in the work-package list.",
+    "category": "column_visibility",
+    "required_permissions": [
+      "view_work_packages"
+    ],
+    "ui_change": {
+      "action": "set_column_visibility",
+      "target": "dueDate",
+      "value": false
+    }
+  },
+  {
+    "capability_id": "column_hide_priority",
+    "name": "Hide the Priority column",
+    "description": "Hide the Priority column in the work-package list.",
+    "category": "column_visibility",
+    "required_permissions": [
+      "view_work_packages"
+    ],
+    "ui_change": {
+      "action": "set_column_visibility",
+      "target": "priority",
+      "value": false
+    }
+  },
+  {
+    "capability_id": "column_hide_story_points",
+    "name": "Hide the Story Points column",
+    "description": "Hide the Story Points column in the work-package list.",
+    "category": "column_visibility",
+    "required_permissions": [
+      "view_work_packages"
+    ],
+    "ui_change": {
+      "action": "set_column_visibility",
+      "target": "storyPoints",
+      "value": false
+    }
+  },
+  {
+    "capability_id": "column_manage_custom_fields",
+    "name": "Manage custom-field columns",
+    "description": "Configure which custom-field columns are available in the work-package list.",
+    "category": "column_visibility",
+    "required_permissions": [
+      "view_work_packages",
+      "manage_types"
+    ],
+    "ui_change": {
+      "action": "manage_custom_field_columns",
+      "target": "work_packages"
+    }
+  },
+  {
+    "capability_id": "widget_move_project_summary",
+    "name": "Move the project summary widget",
+    "description": "Move the project summary widget to a different position on the overview page.",
+    "category": "widget_placement",
+    "required_permissions": [
+      "view_project",
+      "manage_dashboards"
+    ],
+    "ui_change": {
+      "action": "move_widget",
+      "target": "project_summary"
+    }
+  },
+  {
+    "capability_id": "widget_reorder_overview_sections",
+    "name": "Reorder project overview sections",
+    "description": "Change the order of sections displayed on the project overview page.",
+    "category": "widget_placement",
+    "required_permissions": [
+      "view_project",
+      "manage_dashboards"
+    ],
+    "ui_change": {
+      "action": "reorder_sections",
+      "target": "project_overview"
+    }
+  },
+  {
+    "capability_id": "widget_hide_inactive_modules",
+    "name": "Hide inactive project modules",
+    "description": "Hide inactive modules from the project overview page.",
+    "category": "widget_placement",
+    "required_permissions": [
+      "view_project",
+      "edit_project",
+      "select_project_modules"
+    ],
+    "ui_change": {
+      "action": "hide_inactive_modules",
+      "target": "project_overview"
+    }
+  },
+  {
+    "capability_id": "versions_panel_manage",
+    "name": "Manage the versions panel",
+    "description": "Configure the versions panel and its displayed project versions.",
+    "category": "widget_placement",
+    "required_permissions": [
+      "view_work_packages",
+      "manage_versions"
+    ],
+    "ui_change": {
+      "action": "manage_widget",
+      "target": "versions_panel"
+    }
+  },
+  {
+    "capability_id": "member_widget_manage",
+    "name": "Manage the project members widget",
+    "description": "Manage the project members displayed in the members widget.",
+    "category": "widget_placement",
+    "required_permissions": [
+      "view_members",
+      "manage_members"
+    ],
+    "ui_change": {
+      "action": "manage_widget",
+      "target": "members"
+    }
+  },
+  {
+    "capability_id": "module_visibility_toggle",
+    "name": "Show or hide a project module",
+    "description": "Toggle a project module's visibility in project settings.",
+    "category": "widget_placement",
+    "required_permissions": [
+      "edit_project",
+      "select_project_modules"
+    ],
+    "ui_change": {
+      "action": "toggle_module_visibility",
+      "target": "project_module",
+      "value": true
+    }
+  },
+  {
+    "capability_id": "widget_move_work_package_chart",
+    "name": "Move the work-package chart widget",
+    "description": "Move the work-package chart to a different position on the project overview page.",
+    "category": "widget_placement",
+    "required_permissions": [
+      "view_project",
+      "manage_dashboards"
+    ],
+    "ui_change": {
+      "action": "move_widget",
+      "target": "work_packages_graph"
+    }
+  },
+  {
+    "capability_id": "widget_move_project_description",
+    "name": "Move the project description widget",
+    "description": "Move the project description widget to a different position on the overview page.",
+    "category": "widget_placement",
+    "required_permissions": [
+      "view_project",
+      "manage_dashboards"
+    ],
+    "ui_change": {
+      "action": "move_widget",
+      "target": "project_description"
+    }
+  }
+]
