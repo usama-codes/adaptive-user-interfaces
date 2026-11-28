@@ -30,6 +30,17 @@ class IntentValidationError(APIError):
     default_message = "Intent validation failed"
 
 
+class IndexNotFoundError(APIError):
+    status_code = 503
+    error_code = "RETRIEVAL_INDEX_NOT_FOUND"
+    default_message = "The retrieval index has not been built"
+
+
+class IndexStaleError(APIError):
+    error_code = "RETRIEVAL_INDEX_STALE"
+    default_message = "The retrieval index does not match the current manifest or model"
+
+
 class OpenProjectAPIError(APIError):
     status_code = 502
     error_code = "OPENPROJECT_API_ERROR"

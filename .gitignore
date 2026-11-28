@@ -124,6 +124,8 @@ db/*.sql
 # Local development docker
 /.env
 /adaptive_ui_service/.env
+/adaptive_ui_service/data/index/*
+!/adaptive_ui_service/data/index/.gitkeep
 /__pycache__/
 /.pytest_cache/
 /docker-compose.override.yml

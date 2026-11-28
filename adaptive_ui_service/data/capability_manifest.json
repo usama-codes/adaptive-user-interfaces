@@ -2,7 +2,7 @@
   {
     "capability_id": "time_chart_show_hide",
     "name": "Show or hide the work-over-time chart",
-    "description": "Toggle the visibility of the work-over-time chart on the project overview page.",
+    "description": "Show or hide the project timeline chart that visualizes work over time.",
     "category": "time_charts",
     "required_permissions": [
       "view_project",
